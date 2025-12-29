@@ -1,3 +1,5 @@
+import { EventEmitter } from 'events';
+
 export type AgentLaunchConfig = {
   command: string;
   args?: string[];
@@ -8,7 +10,12 @@ export type AgentLaunchConfig = {
   name?: string;
 };
 
-export interface IAgentAdapter {
+export type AdapterOutputEvent = {
+  raw: string;
+  clean: string;
+};
+
+export interface IAgentAdapter extends EventEmitter {
   readonly name: string;
   getLaunchConfig(): AgentLaunchConfig;
   onRawOutput?(data: string): void;

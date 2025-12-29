@@ -1,3 +1,5 @@
+import { EventEmitter } from 'events';
+
 import { AgentLaunchConfig, IAgentAdapter } from './IAgentAdapter';
 
 const MOCK_SCRIPT = [
@@ -22,8 +24,12 @@ const MOCK_SCRIPT = [
   '});',
 ].join('');
 
-export class MockAdapter implements IAgentAdapter {
+export class MockAdapter extends EventEmitter implements IAgentAdapter {
   readonly name = 'mock';
+
+  constructor() {
+    super();
+  }
 
   getLaunchConfig(): AgentLaunchConfig {
     return {

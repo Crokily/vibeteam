@@ -97,10 +97,6 @@ export class GeminiAdapter extends EventEmitter implements IAgentAdapter {
     };
   }
 
-  onRawOutput(data: string): void {
-    process.stdout.write(data);
-  }
-
   onCleanOutput(data: string): void {
     this.sniff(data);
   }

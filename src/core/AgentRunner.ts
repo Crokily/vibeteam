@@ -49,6 +49,7 @@ export class AgentRunner extends EventEmitter {
         const output = { raw: data, clean };
         const event: AgentEvent = { type: 'data', raw: data, clean };
 
+        this.adapter.emit('output', output);
         this.emit('data', output);
         this.emit('event', event);
       });
