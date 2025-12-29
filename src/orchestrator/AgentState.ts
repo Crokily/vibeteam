@@ -1,0 +1,7 @@
+export enum AgentState {
+  IDLE = 'IDLE',
+  RUNNING = 'RUNNING',
+  AWAITING_INTERACTION = 'AWAITING_INTERACTION',
+  PAUSED = 'PAUSED',
+  ERROR = 'ERROR',
+}
