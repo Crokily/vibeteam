@@ -1,0 +1,12 @@
+{
+  "states": {
+    "idle": {
+      "pattern": "\\n> $",
+      "description": "Waiting for user command"
+    },
+    "interaction_required": {
+      "pattern": "\\[y/N\\]",
+      "description": "Waiting for tool execution approval"
+    }
+  }
+}
