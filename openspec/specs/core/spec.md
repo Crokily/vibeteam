@@ -1,7 +1,7 @@
 # core Specification
 
 ## Purpose
-TBD - created by archiving change init-core-architecture. Update Purpose after archive.
+Provide foundational orchestration primitives—PTY process management, adapter contracts, session context, and output sanitization—for AI CLI workflows.
 ## Requirements
 ### Requirement: PTY Process Management
 The system SHALL provide an `AgentRunner` capable of managing subprocesses via a pseudo-terminal.
@@ -52,4 +52,3 @@ The Orchestrator SHALL expose events for UI integration.
 #### Scenario: UI Notification
 - **WHEN** the state changes or interaction is needed
 - **THEN** the Orchestrator emits a corresponding event payload
-
