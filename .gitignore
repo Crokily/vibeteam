@@ -1,1 +1,7 @@
-node_modules\ndist\n.DS_Store\n*.log
+node_modules/
+dist/
+.DS_Store
+*.log
+.env
+coverage/
+.vscode/
