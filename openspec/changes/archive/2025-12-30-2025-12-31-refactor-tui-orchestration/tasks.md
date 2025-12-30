@@ -1,0 +1,14 @@
+## 1. Implementation
+- [x] 1.1 Update `WorkflowTask` type in `Orchestrator.ts` and `WorkflowSession.ts` to include `pendingInputs` (string[]) and `keepAlive` (boolean).
+- [x] 1.2 Update `WorkflowSession.ts` persistence logic to save/load the new fields, ensuring the `pendingInputs` queue state is preserved (so we know what's left to execute after a restart).
+- [x] 1.3 Refactor `Orchestrator.executeTask` to implement the "Idle-Driven Loop":
+    - Remove the hard dependency on `exit` event for completion.
+    - Add listener for `stateChange` events.
+    - Implement the queue processing logic in `handleIdleState`.
+- [x] 1.4 Implement `Orchestrator.handleIdleState` logic:
+    - Check `pendingInputs`.
+    - If has items: `runner.send()`, update session state.
+    - If empty: `resolve()` task promise.
+- [x] 1.5 Update `Orchestrator.cleanupRunner` to respect `keepAlive` flag (do not call `runner.stop()` if true).
+- [x] 1.6 Verify `gemini-patterns.json` regex for `interaction_idle` matches the actual TUI output (already done in chat, but double-check).
+- [x] 1.7 Add unit test for `Orchestrator` simulating a TUI interaction sequence using `MockAdapter`.

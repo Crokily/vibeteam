@@ -20,6 +20,21 @@ class InteractionAdapter extends EventEmitter implements IAgentAdapter {
   }
 }
 
+class MockAdapter extends EventEmitter implements IAgentAdapter {
+  readonly name = 'mock-adapter';
+
+  constructor() {
+    super();
+  }
+
+  getLaunchConfig() {
+    return {
+      command: process.execPath,
+      args: ['-e', 'process.exit(0)'],
+    };
+  }
+}
+
 class FakeRunner extends EventEmitter {
   readonly sent: string[] = [];
   stopped = false;
@@ -59,7 +74,7 @@ describe('Orchestrator', () => {
             {
               id: 'task-0',
               adapter,
-              input: 'Build snake game',
+              pendingInputs: ['Build snake game'],
             },
           ],
         },
@@ -69,6 +84,7 @@ describe('Orchestrator', () => {
     const runPromise = orchestrator.executeWorkflow(workflow);
     await nextTick();
 
+    adapter.emit('stateChange', { to: { name: 'interaction_idle' } });
     adapter.emit('interaction_needed', { prompt: '[y/N]' });
 
     expect(runner.sent).toEqual(['Build snake game\r', 'y\r']);
@@ -97,7 +113,7 @@ describe('Orchestrator', () => {
             {
               id: 'task-0',
               adapter,
-              input: 'Hello',
+              pendingInputs: ['Hello'],
             },
           ],
         },
@@ -106,6 +122,7 @@ describe('Orchestrator', () => {
 
     const firstRun = orchestrator.executeWorkflow(workflow);
     await nextTick();
+    adapter.emit('stateChange', { to: { name: 'interaction_idle' } });
     runners[0].emitExit();
     await firstRun;
 
@@ -114,6 +131,7 @@ describe('Orchestrator', () => {
       id: 'workflow-sequence-2',
     });
     await nextTick();
+    adapter.emit('stateChange', { to: { name: 'interaction_idle' } });
     runners[1].emitExit();
     await secondRun;
 
@@ -137,7 +155,7 @@ describe('Orchestrator', () => {
             {
               id: 'task-0',
               adapter,
-              input: 'Check interaction',
+              pendingInputs: ['Check interaction'],
             },
           ],
         },
@@ -146,6 +164,7 @@ describe('Orchestrator', () => {
 
     const runPromise = orchestrator.executeWorkflow(workflow);
     await nextTick();
+    adapter.emit('stateChange', { to: { name: 'interaction_idle' } });
 
     expect(() => orchestrator.submitInteraction('task-0', 'yes')).toThrow(
       'not waiting',
@@ -161,5 +180,44 @@ describe('Orchestrator', () => {
 
     runner.emitExit();
     await runPromise;
+  });
+
+  it('executes queued inputs on idle transitions', async () => {
+    const adapter = new MockAdapter();
+    const runner = new FakeRunner();
+    const orchestrator = new Orchestrator({
+      runnerFactory: () => runner,
+    });
+
+    const workflow: WorkflowDefinition = {
+      id: 'workflow-idle-queue',
+      stages: [
+        {
+          id: 'stage-0',
+          tasks: [
+            {
+              id: 'task-0',
+              adapter,
+              pendingInputs: ['first', 'second'],
+            },
+          ],
+        },
+      ],
+    };
+
+    const runPromise = orchestrator.executeWorkflow(workflow);
+    await nextTick();
+
+    adapter.emit('stateChange', { to: { name: 'interaction_idle' } });
+    expect(runner.sent).toEqual(['first\r']);
+
+    adapter.emit('stateChange', { to: { name: 'interaction_idle' } });
+    expect(runner.sent).toEqual(['first\r', 'second\r']);
+
+    adapter.emit('stateChange', { to: { name: 'interaction_idle' } });
+    await runPromise;
+
+    expect(orchestrator.getSession()?.taskStatus['task-0']).toBe('DONE');
+    expect(runner.stopped).toBe(true);
   });
 });

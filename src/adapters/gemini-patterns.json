@@ -1,11 +1,11 @@
 {
   "states": {
-    "idle": {
-      "pattern": "\\n> $",
-      "description": "Waiting for user command"
+    "interaction_idle": {
+      "pattern": "(│\\s*>\\s*Type your message(?: or @path/to/file)?|Type your message(?: or @path/to/file)?)",
+      "description": "Gemini TUI input box is visible"
     },
-    "interaction_gemini_menu": {
-      "pattern": "(Allow execution of:|Apply this change\\?|Allow once)",
+    "interaction_handler": {
+      "pattern": "(Allow execution of:|Apply this change\\?|Allow once|Apply this change|Confirm|批准|requires user confirmation)",
       "flags": "i",
       "description": "Gemini CLI execution confirmation menu"
     }

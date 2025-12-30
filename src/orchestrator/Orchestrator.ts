@@ -9,7 +9,8 @@ import { TaskStatus, WorkflowSession } from './WorkflowSession';
 export type WorkflowTask = {
   id: string;
   adapter: IAgentAdapter;
-  input?: string;
+  pendingInputs?: string[];
+  keepAlive?: boolean;
 };
 
 export type WorkflowStage = {
@@ -93,6 +94,7 @@ type RunnerContext = {
   adapterEmitter: AdapterEmitter | null;
   taskId: string;
   stageIndex: number;
+  keepAlive: boolean;
   onRunnerEvent: (event: AgentEvent) => void;
   onInteractionNeeded: (payload?: unknown) => void;
   onAdapterStateChange: (...args: unknown[]) => void;
@@ -220,7 +222,7 @@ export class Orchestrator extends EventEmitter {
             {
               id: 'task-0',
               adapter: this.defaultAdapter,
-              input: goal,
+              pendingInputs: [goal],
             },
           ],
         },
@@ -283,6 +285,8 @@ export class Orchestrator extends EventEmitter {
 
     const runner = this.runnerFactory(task.adapter, task.id);
     const adapterEmitter = asEmitter(task.adapter);
+    const keepAlive =
+      this.session?.keepAlive[task.id] ?? task.keepAlive ?? false;
 
     return new Promise((resolve, reject) => {
       const context: RunnerContext = {
@@ -291,6 +295,7 @@ export class Orchestrator extends EventEmitter {
         adapterEmitter,
         taskId: task.id,
         stageIndex,
+        keepAlive,
         onRunnerEvent: (event) => this.handleRunnerEvent(task.id, stageIndex, event),
         onInteractionNeeded: (payload) =>
           this.handleInteractionNeeded(task.id, payload),
@@ -321,10 +326,6 @@ export class Orchestrator extends EventEmitter {
       }
 
       this.updateTaskStatus(task.id, 'RUNNING');
-
-      if (task.input && task.input.trim()) {
-        this.sendInput(task.id, task.input);
-      }
     });
   }
 
@@ -400,10 +401,53 @@ export class Orchestrator extends EventEmitter {
     }
   }
 
+  private handleIdleState(taskId: string): void {
+    const session = this.session;
+    if (!session) {
+      return;
+    }
+
+    const context = this.activeRunners.get(taskId);
+    if (!context) {
+      return;
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(session.pendingInputs, taskId)) {
+      session.pendingInputs[taskId] = [];
+    }
+
+    const pendingInputs = session.pendingInputs[taskId];
+
+    if (pendingInputs.length === 0) {
+      this.updateTaskStatus(taskId, 'DONE');
+      this.cleanupRunner(taskId);
+      context.resolve();
+      return;
+    }
+
+    const nextInput = pendingInputs[0];
+    if (nextInput === undefined) {
+      return;
+    }
+
+    this.sendInput(taskId, nextInput);
+    pendingInputs.shift();
+    this.persistSession();
+
+    if (session.taskStatus[taskId] !== 'RUNNING') {
+      this.updateTaskStatus(taskId, 'RUNNING');
+    }
+  }
+
   private handleAdapterStateChange(taskId: string, ...args: unknown[]): void {
     const event = args[0] as AdapterStateChange;
     const stateName = event?.to?.name?.toLowerCase();
     if (!stateName) {
+      return;
+    }
+
+    if (stateName.includes('interaction_idle')) {
+      this.handleIdleState(taskId);
       return;
     }
 
@@ -497,7 +541,9 @@ export class Orchestrator extends EventEmitter {
       );
     }
 
-    context.runner.stop();
+    if (!context.keepAlive) {
+      context.runner.stop();
+    }
     this.activeRunners.delete(taskId);
     this.recalculateState();
   }
@@ -562,7 +608,26 @@ export class Orchestrator extends EventEmitter {
 
     for (const stage of workflow.stages) {
       for (const task of stage.tasks) {
+        const hasPendingInputs = Object.prototype.hasOwnProperty.call(
+          this.session.pendingInputs,
+          task.id,
+        );
+        const hasKeepAlive = Object.prototype.hasOwnProperty.call(
+          this.session.keepAlive,
+          task.id,
+        );
+
         this.session.ensureTask(task.id);
+
+        if (!hasPendingInputs) {
+          this.session.pendingInputs[task.id] = Array.isArray(task.pendingInputs)
+            ? [...task.pendingInputs]
+            : [];
+        }
+
+        if (!hasKeepAlive) {
+          this.session.keepAlive[task.id] = task.keepAlive ?? false;
+        }
       }
     }
   }
@@ -594,6 +659,25 @@ export class Orchestrator extends EventEmitter {
       for (const task of stage.tasks) {
         if (!task.id || !task.id.trim()) {
           throw new Error('Workflow task is missing an id.');
+        }
+        if (task.pendingInputs !== undefined) {
+          if (!Array.isArray(task.pendingInputs)) {
+            throw new Error(
+              `Workflow task "${task.id}" pendingInputs must be an array.`,
+            );
+          }
+          for (const input of task.pendingInputs) {
+            if (typeof input !== 'string') {
+              throw new Error(
+                `Workflow task "${task.id}" pendingInputs must be strings.`,
+              );
+            }
+          }
+        }
+        if (task.keepAlive !== undefined && typeof task.keepAlive !== 'boolean') {
+          throw new Error(
+            `Workflow task "${task.id}" keepAlive must be a boolean.`,
+          );
         }
         if (seenTaskIds.has(task.id)) {
           throw new Error(`Workflow task id "${task.id}" must be unique.`);

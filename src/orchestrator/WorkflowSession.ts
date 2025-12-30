@@ -15,6 +15,8 @@ export type WorkflowSessionSnapshot = {
   startTime: string;
   currentStageIndex: number;
   taskStatus: Record<string, TaskStatus>;
+  pendingInputs: Record<string, string[]>;
+  keepAlive: Record<string, boolean>;
   logs: Record<string, string[]>;
   history: string[];
 };
@@ -44,6 +46,8 @@ export class WorkflowSession {
   readonly history: string[];
   currentStageIndex: number;
   readonly taskStatus: Record<string, TaskStatus>;
+  readonly pendingInputs: Record<string, string[]>;
+  readonly keepAlive: Record<string, boolean>;
   readonly logs: Record<string, string[]>;
 
   constructor(
@@ -53,6 +57,8 @@ export class WorkflowSession {
       startTime?: Date;
       currentStageIndex?: number;
       taskStatus?: Record<string, TaskStatus>;
+      pendingInputs?: Record<string, string[]>;
+      keepAlive?: Record<string, boolean>;
       logs?: Record<string, string[]>;
       history?: string[];
     } = {},
@@ -62,6 +68,8 @@ export class WorkflowSession {
     this.startTime = options.startTime ?? new Date();
     this.currentStageIndex = options.currentStageIndex ?? 0;
     this.taskStatus = options.taskStatus ?? {};
+    this.pendingInputs = options.pendingInputs ?? {};
+    this.keepAlive = options.keepAlive ?? {};
     this.logs = options.logs ?? {};
     this.history = options.history ?? [];
   }
@@ -131,6 +139,40 @@ export class WorkflowSession {
       }
     }
 
+    const pendingInputs: Record<string, string[]> = {};
+    if (data.pendingInputs !== undefined) {
+      if (!isRecord(data.pendingInputs)) {
+        throw new Error('Invalid session data: pendingInputs must be an object.');
+      }
+
+      for (const [taskId, value] of Object.entries(data.pendingInputs)) {
+        if (!Array.isArray(value)) {
+          throw new Error(
+            `Invalid session data: pendingInputs for "${taskId}" must be an array.`,
+          );
+        }
+        pendingInputs[taskId] = value.filter(
+          (entry): entry is string => typeof entry === 'string',
+        );
+      }
+    }
+
+    const keepAlive: Record<string, boolean> = {};
+    if (data.keepAlive !== undefined) {
+      if (!isRecord(data.keepAlive)) {
+        throw new Error('Invalid session data: keepAlive must be an object.');
+      }
+
+      for (const [taskId, value] of Object.entries(data.keepAlive)) {
+        if (typeof value !== 'boolean') {
+          throw new Error(
+            `Invalid session data: keepAlive for "${taskId}" must be a boolean.`,
+          );
+        }
+        keepAlive[taskId] = value;
+      }
+    }
+
     const history = Array.isArray(data.history)
       ? data.history.filter((entry): entry is string => typeof entry === 'string')
       : [];
@@ -140,6 +182,8 @@ export class WorkflowSession {
       startTime: Number.isNaN(startTime.getTime()) ? new Date() : startTime,
       currentStageIndex,
       taskStatus,
+      pendingInputs,
+      keepAlive,
       logs,
       history,
     });
@@ -152,6 +196,13 @@ export class WorkflowSession {
       startTime: this.startTime.toISOString(),
       currentStageIndex: this.currentStageIndex,
       taskStatus: { ...this.taskStatus },
+      pendingInputs: Object.fromEntries(
+        Object.entries(this.pendingInputs).map(([taskId, inputs]) => [
+          taskId,
+          [...inputs],
+        ]),
+      ),
+      keepAlive: { ...this.keepAlive },
       logs: Object.fromEntries(
         Object.entries(this.logs).map(([taskId, entries]) => [
           taskId,
@@ -174,6 +225,14 @@ export class WorkflowSession {
 
     if (!this.logs[taskId]) {
       this.logs[taskId] = [];
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(this.pendingInputs, taskId)) {
+      this.pendingInputs[taskId] = [];
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(this.keepAlive, taskId)) {
+      this.keepAlive[taskId] = false;
     }
   }
 

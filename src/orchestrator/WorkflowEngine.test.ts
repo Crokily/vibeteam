@@ -45,13 +45,18 @@ describe('WorkflowEngine', () => {
 
   it('persists session state to disk', () => {
     const session = WorkflowSession.create('test-goal');
+    session.ensureTask('task-1');
     session.updateTaskStatus('task-1', 'RUNNING');
+    session.pendingInputs['task-1'] = ['step-1'];
+    session.keepAlive['task-1'] = true;
     session.save(TEST_DIR);
 
     const loaded = WorkflowSession.load(session.id, TEST_DIR);
     expect(loaded.id).toBe(session.id);
     expect(loaded.goal).toBe('test-goal');
     expect(loaded.taskStatus['task-1']).toBe('RUNNING');
+    expect(loaded.pendingInputs['task-1']).toEqual(['step-1']);
+    expect(loaded.keepAlive['task-1']).toBe(true);
   });
 
   it('executes stages sequentially', async () => {
