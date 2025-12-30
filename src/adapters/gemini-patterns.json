@@ -4,9 +4,10 @@
       "pattern": "\\n> $",
       "description": "Waiting for user command"
     },
-    "interaction_required": {
-      "pattern": "\\[y/N\\]",
-      "description": "Waiting for tool execution approval"
+    "interaction_gemini_menu": {
+      "pattern": "(Allow execution of:|Apply this change\\?|Allow once)",
+      "flags": "i",
+      "description": "Gemini CLI execution confirmation menu"
     }
   }
 }

@@ -80,7 +80,7 @@ export class WorkflowSession {
 
   static fromSnapshot(
     data: unknown,
-    fallbackId = randomUUID(),
+    fallbackId: string = randomUUID(),
   ): WorkflowSession {
     if (!isRecord(data)) {
       throw new Error('Invalid session data: expected an object.');
