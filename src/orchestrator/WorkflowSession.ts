@@ -1,6 +1,4 @@
 import { randomUUID } from 'crypto';
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs';
-import * as path from 'path';
 
 export type TaskStatus =
   | 'PENDING'
@@ -31,13 +29,6 @@ const TASK_STATUSES: ReadonlySet<TaskStatus> = new Set([
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value);
-
-const normalizeLines = (chunk: string): string[] =>
-  chunk
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n')
-    .split('\n')
-    .filter((line) => line.length > 0);
 
 export class WorkflowSession {
   readonly id: string;
@@ -72,18 +63,6 @@ export class WorkflowSession {
     this.keepAlive = options.keepAlive ?? {};
     this.logs = options.logs ?? {};
     this.history = options.history ?? [];
-  }
-
-  static create(goal: string): WorkflowSession {
-    return new WorkflowSession(goal);
-  }
-
-  static load(sessionId: string, baseDir = process.cwd()): WorkflowSession {
-    const sessionPath = WorkflowSession.getSessionPath(sessionId, baseDir);
-    const raw = readFileSync(sessionPath, 'utf8');
-    const parsed = JSON.parse(raw) as unknown;
-
-    return WorkflowSession.fromSnapshot(parsed, sessionId);
   }
 
   static fromSnapshot(
@@ -211,61 +190,5 @@ export class WorkflowSession {
       ),
       history: [...this.history],
     };
-  }
-
-  addHistory(entry: string, taskId?: string): void {
-    const prefix = taskId ? `[${taskId}] ` : '';
-    this.history.push(`${prefix}${entry}`);
-  }
-
-  ensureTask(taskId: string): void {
-    if (!this.taskStatus[taskId]) {
-      this.taskStatus[taskId] = 'PENDING';
-    }
-
-    if (!this.logs[taskId]) {
-      this.logs[taskId] = [];
-    }
-
-    if (!Object.prototype.hasOwnProperty.call(this.pendingInputs, taskId)) {
-      this.pendingInputs[taskId] = [];
-    }
-
-    if (!Object.prototype.hasOwnProperty.call(this.keepAlive, taskId)) {
-      this.keepAlive[taskId] = false;
-    }
-  }
-
-  updateTaskStatus(taskId: string, status: TaskStatus): void {
-    this.taskStatus[taskId] = status;
-  }
-
-  appendLog(taskId: string, chunk: string): void {
-    this.ensureTask(taskId);
-    const entries = normalizeLines(chunk);
-    if (entries.length === 0) {
-      return;
-    }
-    this.logs[taskId].push(...entries);
-  }
-
-  save(baseDir = process.cwd()): void {
-    const sessionDir = WorkflowSession.getSessionDir(baseDir);
-    mkdirSync(sessionDir, { recursive: true });
-
-    const sessionPath = WorkflowSession.getSessionPath(this.id, baseDir);
-    const tempPath = `${sessionPath}.tmp`;
-    const payload = JSON.stringify(this.toJSON(), null, 2);
-
-    writeFileSync(tempPath, payload, 'utf8');
-    renameSync(tempPath, sessionPath);
-  }
-
-  static getSessionDir(baseDir = process.cwd()): string {
-    return path.join(baseDir, '.vibeteam', 'sessions');
-  }
-
-  static getSessionPath(sessionId: string, baseDir = process.cwd()): string {
-    return path.join(WorkflowSession.getSessionDir(baseDir), `${sessionId}.json`);
   }
 }

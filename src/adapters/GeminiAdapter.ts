@@ -115,15 +115,15 @@ export class GeminiAdapter extends EventEmitter implements IAgentAdapter {
   }
 
   private loadPatterns(patternsPath?: string): PatternLoadResult {
-    if (patternsPath) {
-      return PatternLoader.loadFromFile(path.resolve(patternsPath));
-    }
+    const candidates = this.resolvePatternPaths(patternsPath);
+    const errors: string[] = [];
 
-    const defaultPath = path.join(__dirname, 'gemini-patterns.json');
-    const fromFile = PatternLoader.loadFromFile(defaultPath);
-
-    if (fromFile.patterns.length > 0) {
-      return fromFile;
+    for (const candidate of candidates) {
+      const result = PatternLoader.loadFromFile(candidate);
+      if (result.patterns.length > 0) {
+        return result;
+      }
+      errors.push(...result.errors);
     }
 
     const fallback = PatternLoader.loadFromObject(
@@ -133,8 +133,22 @@ export class GeminiAdapter extends EventEmitter implements IAgentAdapter {
 
     return {
       patterns: fallback.patterns,
-      errors: [...fromFile.errors, ...fallback.errors],
+      errors: [...errors, ...fallback.errors],
     };
+  }
+
+  private resolvePatternPaths(patternsPath?: string): string[] {
+    if (patternsPath) {
+      return [path.resolve(patternsPath)];
+    }
+
+    const cwd = process.cwd();
+    return [
+      path.join(cwd, 'src', 'adapters', 'gemini-patterns.json'),
+      path.join(cwd, 'dist', 'adapters', 'gemini-patterns.json'),
+      path.join(cwd, 'adapters', 'gemini-patterns.json'),
+      path.join(cwd, 'gemini-patterns.json'),
+    ];
   }
 
   private sniff(chunk: string): void {

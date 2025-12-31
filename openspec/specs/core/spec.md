@@ -35,7 +35,11 @@ The system SHALL provide utilities to process raw terminal output.
 - **THEN** a clean, text-only version is generated for programmatic analysis
 
 ### Requirement: Centralized Workflow Management
-The system SHALL provide an `Orchestrator` to manage the execution flow of AI agents.
+The system SHALL provide a modular orchestration layer to manage the execution flow of AI agents.
+
+#### Scenario: Component Separation
+- **WHEN** the system is started
+- **THEN** it utilizes distinct components for session persistence (`SessionManager`), execution logic (`WorkflowExecutor`), and public API (`Orchestrator`)
 
 #### Scenario: State Tracking
 - **WHEN** an agent is performing work
