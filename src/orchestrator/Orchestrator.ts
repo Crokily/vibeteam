@@ -1,8 +1,9 @@
 import { EventEmitter } from 'events';
 
-import { IAgentAdapter } from '../adapters/IAgentAdapter';
+import { AgentLaunchConfig, IAgentAdapter } from '../adapters/IAgentAdapter';
 import { AgentEvent } from '../core/AgentEvent';
 import { AgentRunner } from '../core/AgentRunner';
+import { InteractionContext } from '../core/automation/types';
 import { AgentState } from './AgentState';
 import { TaskStatus, WorkflowSession } from './WorkflowSession';
 
@@ -31,7 +32,11 @@ export type ExecuteWorkflowOptions = {
 export type OrchestratorOptions = {
   autoApprove?: boolean;
   autoApproveResponse?: string;
-  runnerFactory?: (adapter: IAgentAdapter, taskId?: string) => AgentRunnerLike;
+  runnerFactory?: (
+    adapter: IAgentAdapter,
+    taskId?: string,
+    launchConfig?: AgentLaunchConfig,
+  ) => AgentRunnerLike;
 };
 
 export type OrchestratorStateChange = {
@@ -120,7 +125,11 @@ const normalizeInput = (input: string): string => {
 export class Orchestrator extends EventEmitter {
   private readonly autoApprove: boolean;
   private readonly autoApproveResponse: string;
-  private readonly runnerFactory: (adapter: IAgentAdapter, taskId?: string) => AgentRunnerLike;
+  private readonly runnerFactory: (
+    adapter: IAgentAdapter,
+    taskId?: string,
+    launchConfig?: AgentLaunchConfig,
+  ) => AgentRunnerLike;
 
   private readonly activeRunners = new Map<string, RunnerContext>();
   private defaultAdapter: IAgentAdapter | null = null;
@@ -134,7 +143,8 @@ export class Orchestrator extends EventEmitter {
     this.autoApprove = options.autoApprove ?? false;
     this.autoApproveResponse = options.autoApproveResponse ?? 'y';
     this.runnerFactory =
-      options.runnerFactory ?? ((adapter) => new AgentRunner(adapter));
+      options.runnerFactory ??
+      ((adapter, _taskId, launchConfig) => new AgentRunner(adapter, launchConfig));
   }
 
   getState(): AgentState {
@@ -283,7 +293,8 @@ export class Orchestrator extends EventEmitter {
       throw new Error(`Task "${task.id}" is already running.`);
     }
 
-    const runner = this.runnerFactory(task.adapter, task.id);
+    const launchConfig = this.resolveLaunchConfig(task.adapter);
+    const runner = this.runnerFactory(task.adapter, task.id, launchConfig);
     const adapterEmitter = asEmitter(task.adapter);
     const keepAlive =
       this.session?.keepAlive[task.id] ?? task.keepAlive ?? false;
@@ -327,6 +338,21 @@ export class Orchestrator extends EventEmitter {
 
       this.updateTaskStatus(task.id, 'RUNNING');
     });
+  }
+
+  private resolveLaunchConfig(adapter: IAgentAdapter): AgentLaunchConfig {
+    const config = adapter.getLaunchConfig();
+    if (!this.autoApprove) {
+      return config;
+    }
+
+    const injectArgs = adapter.autoPolicy?.injectArgs;
+    if (!injectArgs || injectArgs.length === 0) {
+      return config;
+    }
+
+    const mergedArgs = [...(config.args ?? []), ...injectArgs];
+    return { ...config, args: mergedArgs };
   }
 
   private sendInput(taskId: string, input: string): void {
@@ -457,6 +483,17 @@ export class Orchestrator extends EventEmitter {
   }
 
   private handleInteractionNeeded(taskId: string, payload?: unknown): void {
+    const autoAction = this.resolveAutoAction(taskId, payload);
+    if (autoAction !== null) {
+      try {
+        this.sendInput(taskId, autoAction);
+        this.updateTaskStatus(taskId, 'RUNNING');
+      } catch (error) {
+        this.emit('error', error);
+      }
+      return;
+    }
+
     this.updateTaskStatus(taskId, 'WAITING_FOR_USER');
 
     const event: OrchestratorInteraction = {
@@ -465,16 +502,42 @@ export class Orchestrator extends EventEmitter {
       payload,
     };
     this.emit('interactionNeeded', event);
+  }
 
+  private resolveAutoAction(taskId: string, payload?: unknown): string | null {
     if (!this.autoApprove) {
-      return;
+      return null;
     }
 
-    try {
-      this.submitInteraction(taskId, this.autoApproveResponse);
-    } catch (error) {
-      this.emit('error', error);
+    const context = this.activeRunners.get(taskId);
+    if (!context) {
+      return null;
     }
+
+    const handlers = context.adapter.autoPolicy?.handlers;
+    if (!handlers || handlers.length === 0) {
+      return null;
+    }
+
+    const interactionContext: InteractionContext = {
+      taskId,
+      adapter: context.adapter,
+      payload,
+    };
+
+    for (const handler of handlers) {
+      try {
+        const action = handler(interactionContext);
+        if (action !== null && action !== undefined) {
+          return action;
+        }
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        this.emit('error', err);
+      }
+    }
+
+    return null;
   }
 
   private attachAdapterListeners(

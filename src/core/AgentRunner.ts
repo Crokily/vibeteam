@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import * as pty from 'node-pty';
 
-import { IAgentAdapter } from '../adapters/IAgentAdapter';
+import { AgentLaunchConfig, IAgentAdapter } from '../adapters/IAgentAdapter';
 import { AnsiUtils } from './AnsiUtils';
 import { AgentEvent } from './AgentEvent';
 
@@ -18,7 +18,10 @@ export type AgentExit = {
 export class AgentRunner extends EventEmitter {
   private ptyProcess: pty.IPty | null = null;
 
-  constructor(private readonly adapter: IAgentAdapter) {
+  constructor(
+    private readonly adapter: IAgentAdapter,
+    private readonly launchConfigOverride?: AgentLaunchConfig,
+  ) {
     super();
   }
 
@@ -27,7 +30,7 @@ export class AgentRunner extends EventEmitter {
       throw new Error('AgentRunner is already started.');
     }
 
-    const config = this.adapter.getLaunchConfig();
+    const config = this.launchConfigOverride ?? this.adapter.getLaunchConfig();
 
     try {
       const ptyProcess = pty.spawn(config.command, config.args ?? [], {

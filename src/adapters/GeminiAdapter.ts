@@ -8,6 +8,7 @@ import {
   PatternLoader,
 } from './PatternLoader';
 import geminiPatterns from './gemini-patterns.json';
+import { StandardHandlers } from '../core/automation/StandardHandlers';
 
 const DEFAULT_BUFFER_SIZE = 4096;
 
@@ -40,6 +41,10 @@ const normalizeChunk = (chunk: string): string =>
 
 export class GeminiAdapter extends EventEmitter implements IAgentAdapter {
   readonly name = 'gemini';
+  readonly autoPolicy = {
+    injectArgs: ['--approval-mode', 'yolo'],
+    handlers: [StandardHandlers.confirmYes, StandardHandlers.pressEnter],
+  };
   onStateChange?: (event: GeminiStateChange) => void;
 
   private readonly command: string;
