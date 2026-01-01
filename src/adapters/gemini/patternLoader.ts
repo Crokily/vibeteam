@@ -1,7 +1,7 @@
 import * as path from 'path';
 
-import { PatternLoadResult, PatternLoader } from './PatternLoader';
-import geminiPatterns from './gemini-patterns.json';
+import { PatternLoadResult, PatternLoader } from '../PatternLoader';
+import embeddedPatterns from './patterns.json';
 
 export const loadGeminiPatterns = (patternsPath?: string): PatternLoadResult => {
   const candidates = resolvePatternPaths(patternsPath);
@@ -16,8 +16,8 @@ export const loadGeminiPatterns = (patternsPath?: string): PatternLoadResult => 
   }
 
   const fallback = PatternLoader.loadFromObject(
-    geminiPatterns,
-    'embedded gemini-patterns.json',
+    embeddedPatterns,
+    'embedded patterns.json',
   );
 
   return {
@@ -33,9 +33,9 @@ const resolvePatternPaths = (patternsPath?: string): string[] => {
 
   const cwd = process.cwd();
   return [
-    path.join(cwd, 'src', 'adapters', 'gemini-patterns.json'),
-    path.join(cwd, 'dist', 'adapters', 'gemini-patterns.json'),
-    path.join(cwd, 'adapters', 'gemini-patterns.json'),
-    path.join(cwd, 'gemini-patterns.json'),
+    path.join(cwd, 'src', 'adapters', 'gemini', 'patterns.json'),
+    path.join(cwd, 'dist', 'adapters', 'gemini', 'patterns.json'),
+    path.join(cwd, 'adapters', 'gemini', 'patterns.json'), // Legacy/Fallback
+    path.join(cwd, 'gemini', 'patterns.json'),
   ];
 };

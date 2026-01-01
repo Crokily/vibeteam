@@ -1,7 +1,7 @@
 import * as path from 'path';
 import { describe, expect, it } from 'vitest';
 
-import { GeminiAdapter } from './GeminiAdapter';
+import { GeminiAdapter } from './gemini';
 
 describe('GeminiAdapter', () => {
   it('builds headless args with positional prompt', () => {
@@ -17,7 +17,7 @@ describe('GeminiAdapter', () => {
 
   it('loads patterns from a workspace-relative path', () => {
     const adapter = new GeminiAdapter({
-      patternsPath: path.join('src', 'adapters', 'gemini-patterns.json'),
+      patternsPath: path.join('src', 'adapters', 'gemini', 'patterns.json'),
     });
 
     expect(adapter.getPatternErrors()).toEqual([]);

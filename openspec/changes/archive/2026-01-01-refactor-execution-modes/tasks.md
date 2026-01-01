@@ -6,5 +6,5 @@
 - [x] Update orchestration tests to match the new execution model.
 
 ## 2. Validation
-- [ ] Run unit tests for adapter and executor changes.
-- [ ] Run integration scripts as needed.
+- [x] Run unit tests for adapter and executor changes.
+- [x] Run integration scripts as needed.

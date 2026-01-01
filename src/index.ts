@@ -6,7 +6,7 @@ export { AgentState } from './orchestrator/AgentState';
 export * from './orchestrator/types';
 
 export type { AgentLaunchConfig, IAgentAdapter } from './adapters/IAgentAdapter';
-export { GeminiAdapter } from './adapters/GeminiAdapter';
+export { GeminiAdapter } from './adapters/gemini';
 export { MockAdapter } from './adapters/MockAdapter';
 export * from './adapters/PatternLoader';
 
