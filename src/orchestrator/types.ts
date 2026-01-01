@@ -35,6 +35,40 @@ export type AgentRunnerLike = {
   off?(event: 'event', listener: (event: AgentEvent) => void): void;
 };
 
+export type AdapterEmitter = {
+  on(event: string, listener: (...args: unknown[]) => void): void;
+  off?(event: string, listener: (...args: unknown[]) => void): void;
+};
+
+export type AdapterStateChange = {
+  to?: {
+    name?: string;
+  };
+};
+
+export type AdapterEmitterEvents =
+  | 'interaction_needed'
+  | 'interactionNeeded'
+  | 'stateChange';
+
+export type RunnerContext = {
+  runner: AgentRunnerLike;
+  adapter: IAgentAdapter;
+  adapterEmitter: AdapterEmitter | null;
+  taskId: string;
+  stageIndex: number;
+  executionMode: ExecutionMode;
+  prompt?: string;
+  promptInLaunch: boolean;
+  initialPromptSent: boolean;
+  initialPromptTimer: NodeJS.Timeout | null;
+  onRunnerEvent: (event: AgentEvent) => void;
+  onInteractionNeeded: (payload?: unknown) => void;
+  onAdapterStateChange: (...args: unknown[]) => void;
+  resolve: () => void;
+  reject: (error: Error) => void;
+};
+
 export type RunnerFactoryContext = {
   executionMode: ExecutionMode;
   prompt?: string;

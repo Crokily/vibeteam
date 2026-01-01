@@ -1,13 +1,9 @@
 import { EventEmitter } from 'events';
-import * as path from 'path';
 
 import { AgentLaunchConfig, IAgentAdapter } from './IAgentAdapter';
-import {
-  CompiledPattern,
-  PatternLoadResult,
-  PatternLoader,
-} from './PatternLoader';
-import geminiPatterns from './gemini-patterns.json';
+import { CompiledPattern } from './PatternLoader';
+import { buildHeadlessArgs } from './geminiArgs';
+import { loadGeminiPatterns } from './geminiPatterns';
 
 const DEFAULT_BUFFER_SIZE = 4096;
 
@@ -76,7 +72,7 @@ export class GeminiAdapter extends EventEmitter implements IAgentAdapter {
         : DEFAULT_BUFFER_SIZE;
     this.debugSniffer = options.debugSniffer ?? false;
 
-    const patternResult = this.loadPatterns(options.patternsPath);
+    const patternResult = loadGeminiPatterns(options.patternsPath);
     this.patterns = patternResult.patterns;
     this.patternLoadErrors = patternResult.errors;
 
@@ -106,7 +102,7 @@ export class GeminiAdapter extends EventEmitter implements IAgentAdapter {
 
     return {
       command: this.command,
-      args: this.buildHeadlessArgs(normalizedPrompt),
+      args: buildHeadlessArgs(this.headlessArgs, normalizedPrompt),
       ...this.launchOptions,
     };
   }
@@ -121,95 +117,6 @@ export class GeminiAdapter extends EventEmitter implements IAgentAdapter {
 
   getPatternErrors(): string[] {
     return [...this.patternLoadErrors];
-  }
-
-  private loadPatterns(patternsPath?: string): PatternLoadResult {
-    const candidates = this.resolvePatternPaths(patternsPath);
-    const errors: string[] = [];
-
-    for (const candidate of candidates) {
-      const result = PatternLoader.loadFromFile(candidate);
-      if (result.patterns.length > 0) {
-        return result;
-      }
-      errors.push(...result.errors);
-    }
-
-    const fallback = PatternLoader.loadFromObject(
-      geminiPatterns,
-      'embedded gemini-patterns.json',
-    );
-
-    return {
-      patterns: fallback.patterns,
-      errors: [...errors, ...fallback.errors],
-    };
-  }
-
-  private resolvePatternPaths(patternsPath?: string): string[] {
-    if (patternsPath) {
-      return [path.resolve(patternsPath)];
-    }
-
-    const cwd = process.cwd();
-    return [
-      path.join(cwd, 'src', 'adapters', 'gemini-patterns.json'),
-      path.join(cwd, 'dist', 'adapters', 'gemini-patterns.json'),
-      path.join(cwd, 'adapters', 'gemini-patterns.json'),
-      path.join(cwd, 'gemini-patterns.json'),
-    ];
-  }
-
-  private buildHeadlessArgs(prompt: string): string[] {
-    const withoutApproval = this.stripApprovalArgs(this.headlessArgs);
-    const withoutPrompt = this.stripPromptArgs(withoutApproval);
-    const withoutChat = withoutPrompt.filter((arg) => arg !== 'chat');
-
-    return [...withoutChat, '--approval-mode', 'yolo', prompt];
-  }
-
-  private stripPromptArgs(args: string[]): string[] {
-    const result: string[] = [];
-    let skipNext = false;
-
-    for (const arg of args) {
-      if (skipNext) {
-        skipNext = false;
-        continue;
-      }
-      if (arg === '--prompt' || arg === '-p') {
-        skipNext = true;
-        continue;
-      }
-      if (arg.startsWith('--prompt=')) {
-        continue;
-      }
-      result.push(arg);
-    }
-
-    return result;
-  }
-
-  private stripApprovalArgs(args: string[]): string[] {
-    const result: string[] = [];
-    let skipNext = false;
-
-    for (const arg of args) {
-      if (skipNext) {
-        skipNext = false;
-        continue;
-      }
-      if (arg === '--approval-mode') {
-        skipNext = true;
-        continue;
-      }
-      if (arg.startsWith('--approval-mode=')) {
-        continue;
-      }
-      result.push(arg);
-    }
-
-    return result;
   }
 
   private sniff(chunk: string): void {
