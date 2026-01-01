@@ -2,7 +2,6 @@
 
 ## Purpose
 Provide foundational orchestration primitives for AI CLI workflows, including PTY/headless process management, adapter contracts, session context, and output sanitization.
-
 ## Requirements
 ### Requirement: PTY Process Management
 The system SHALL provide an `AgentRunner` capable of managing subprocesses via a pseudo-terminal.
@@ -121,3 +120,12 @@ The system SHALL capture all agent output internally without writing to the main
 - **WHEN** a task is running
 - **THEN** its output is buffered and emitted as events
 - **AND** NO output appears on `process.stdout` unless explicitly handled by the UI consumer
+
+### Requirement: Modular Orchestrator Structure
+The orchestration layer SHALL be organized into functional subdirectories (`engine`, `state`) to maintain clear boundaries between execution logic and persistence.
+
+#### Scenario: Navigating the Codebase
+- **WHEN** a developer inspects the `src/orchestrator` directory
+- **THEN** they see clearly categorized folders for execution engine and state management
+- **AND** the top-level directory contains only the primary facade and public interfaces
+

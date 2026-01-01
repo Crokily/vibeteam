@@ -1,10 +1,10 @@
 import { EventEmitter } from 'events';
 
-import { AgentState } from './AgentState';
-import { SessionManager } from './SessionManager';
+import { AgentState } from '../state/AgentState';
+import { SessionManager } from '../state/SessionManager';
 import { TaskRunner } from './TaskRunner';
-import { TaskStatus, WorkflowSession } from './WorkflowSession';
-import { RunnerFactory, WorkflowDefinition, WorkflowStage } from './types';
+import { TaskStatus, WorkflowSession } from '../state/WorkflowSession';
+import { RunnerFactory, WorkflowDefinition, WorkflowStage } from '../types';
 import { validateWorkflow } from './workflowValidation';
 
 export type WorkflowExecutorOptions = {

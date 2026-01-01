@@ -1,11 +1,11 @@
 import { EventEmitter } from 'events';
 import { describe, expect, it } from 'vitest';
 
-import { IAgentAdapter } from '../adapters/IAgentAdapter';
-import { AgentState } from './AgentState';
-import { SessionManager } from './SessionManager';
+import { IAgentAdapter } from '../../adapters/IAgentAdapter';
+import { AgentState } from '../state/AgentState';
+import { SessionManager } from '../state/SessionManager';
 import { WorkflowExecutor } from './WorkflowExecutor';
-import { ExecutionMode, RunnerFactory, WorkflowDefinition } from './types';
+import { ExecutionMode, RunnerFactory, WorkflowDefinition } from '../types';
 
 class MockAdapter extends EventEmitter implements IAgentAdapter {
   readonly name: string;

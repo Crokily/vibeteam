@@ -1,7 +1,7 @@
-import { AgentLaunchConfig, IAgentAdapter } from '../adapters/IAgentAdapter';
-import { AgentRunner } from '../core/AgentRunner';
-import { HeadlessRunner } from '../core/HeadlessRunner';
-import { AgentRunnerLike, ExecutionMode, RunnerFactory } from './types';
+import { AgentLaunchConfig, IAgentAdapter } from '../../adapters/IAgentAdapter';
+import { AgentRunner } from '../../core/AgentRunner';
+import { HeadlessRunner } from '../../core/HeadlessRunner';
+import { AgentRunnerLike, ExecutionMode, RunnerFactory } from '../types';
 
 export type LaunchConfigResult = {
   launchConfig: AgentLaunchConfig;

@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs';
 import * as path from 'path';
 
-import { WorkflowDefinition } from './types';
+import { WorkflowDefinition } from '../types';
 import { TaskStatus, WorkflowSession } from './WorkflowSession';
 
 export type SessionManagerOptions = {

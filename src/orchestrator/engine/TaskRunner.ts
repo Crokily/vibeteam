@@ -1,14 +1,14 @@
 import { EventEmitter } from 'events';
 
-import { SessionManager } from './SessionManager';
-import { TaskStatus } from './WorkflowSession';
+import { SessionManager } from '../state/SessionManager';
+import { TaskStatus } from '../state/WorkflowSession';
 import {
   ExecutionMode,
   OrchestratorTaskStatusChange,
   RunnerContext,
   RunnerFactory,
   WorkflowTask,
-} from './types';
+} from '../types';
 import { asEmitter, attachAdapterListeners, normalizeInput } from './runnerUtils';
 import { createRunner, resolveLaunchConfig } from './runnerFactory';
 import { prepareInitialPrompt } from './runnerPrompt';

@@ -1,5 +1,5 @@
-import { SessionManager } from './SessionManager';
-import { RunnerContext } from './types';
+import { SessionManager } from '../state/SessionManager';
+import { RunnerContext } from '../types';
 
 type PromptOptions = {
   output?: string;

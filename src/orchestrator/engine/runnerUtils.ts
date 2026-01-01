@@ -1,5 +1,5 @@
-import { IAgentAdapter } from '../adapters/IAgentAdapter';
-import { AdapterEmitter, AdapterEmitterEvents } from './types';
+import { IAgentAdapter } from '../../adapters/IAgentAdapter';
+import { AdapterEmitter, AdapterEmitterEvents } from '../types';
 
 export const asEmitter = (adapter: IAgentAdapter): AdapterEmitter | null => {
   const candidate = adapter as unknown as AdapterEmitter;

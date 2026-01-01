@@ -1,13 +1,13 @@
-import { AgentEvent } from '../core/AgentEvent';
-import { SessionManager } from './SessionManager';
-import { TaskStatus } from './WorkflowSession';
+import { AgentEvent } from '../../core/AgentEvent';
+import { SessionManager } from '../state/SessionManager';
+import { TaskStatus } from '../state/WorkflowSession';
 import {
   AdapterStateChange,
   OrchestratorAgentEvent,
   OrchestratorInteraction,
   OrchestratorTaskOutput,
   RunnerContext,
-} from './types';
+} from '../types';
 import { detachAdapterListeners } from './runnerUtils';
 import { maybeSendInitialPrompt } from './runnerPrompt';
 

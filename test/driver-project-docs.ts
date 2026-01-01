@@ -1,6 +1,6 @@
 import * as path from 'path';
 
-import { Orchestrator, WorkflowDefinition } from '../src/orchestrator/Orchestrator';
+import { Orchestrator, WorkflowDefinition } from '../src/index';
 import { GeminiAdapter } from '../src/index';
 import {
   assertFilesExist,

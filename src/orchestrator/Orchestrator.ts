@@ -1,10 +1,10 @@
 import { EventEmitter } from 'events';
 
 import { IAgentAdapter } from '../adapters/IAgentAdapter';
-import { AgentState } from './AgentState';
-import { SessionManager } from './SessionManager';
-import { WorkflowExecutor } from './WorkflowExecutor';
-import { WorkflowSession } from './WorkflowSession';
+import { AgentState } from './state/AgentState';
+import { SessionManager } from './state/SessionManager';
+import { WorkflowExecutor } from './engine/WorkflowExecutor';
+import { WorkflowSession } from './state/WorkflowSession';
 import {
   ExecuteWorkflowOptions,
   OrchestratorOptions,

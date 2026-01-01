@@ -1,7 +1,7 @@
 import { AgentLaunchConfig, IAgentAdapter } from '../adapters/IAgentAdapter';
 import { AgentEvent } from '../core/AgentEvent';
-import { AgentState } from './AgentState';
-import { TaskStatus, WorkflowSession } from './WorkflowSession';
+import { AgentState } from './state/AgentState';
+import { TaskStatus, WorkflowSession } from './state/WorkflowSession';
 
 export type ExecutionMode = 'interactive' | 'headless';
 

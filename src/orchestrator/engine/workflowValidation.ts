@@ -1,4 +1,4 @@
-import { WorkflowDefinition } from './types';
+import { WorkflowDefinition } from '../types';
 
 export const validateWorkflow = (workflow: WorkflowDefinition): void => {
   if (!workflow.stages || workflow.stages.length === 0) {
