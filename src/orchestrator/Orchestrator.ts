@@ -1,7 +1,6 @@
 import { EventEmitter } from 'events';
 
 import { IAgentAdapter } from '../adapters/IAgentAdapter';
-import { AgentRunner } from '../core/AgentRunner';
 import { AgentState } from './AgentState';
 import { SessionManager } from './SessionManager';
 import { WorkflowExecutor } from './WorkflowExecutor';
@@ -28,9 +27,7 @@ export type {
 } from './types';
 
 export class Orchestrator extends EventEmitter {
-  private readonly autoApprove: boolean;
-  private readonly autoApproveResponse: string;
-  private readonly runnerFactory: RunnerFactory;
+  private readonly runnerFactory?: RunnerFactory;
 
   private defaultAdapter: IAgentAdapter | null = null;
   private sessionManager: SessionManager | null = null;
@@ -40,11 +37,7 @@ export class Orchestrator extends EventEmitter {
 
   constructor(options: OrchestratorOptions = {}) {
     super();
-    this.autoApprove = options.autoApprove ?? false;
-    this.autoApproveResponse = options.autoApproveResponse ?? 'y';
-    this.runnerFactory =
-      options.runnerFactory ??
-      ((adapter, _taskId, launchConfig) => new AgentRunner(adapter, launchConfig));
+    this.runnerFactory = options.runnerFactory;
   }
 
   getState(): AgentState {
@@ -87,9 +80,7 @@ export class Orchestrator extends EventEmitter {
 
     this.executor?.removeAllListeners();
     this.executor = new WorkflowExecutor(this.sessionManager, {
-      autoApprove: this.autoApprove,
-      autoApproveResponse: this.autoApproveResponse,
-      runnerFactory: this.runnerFactory,
+      ...(this.runnerFactory ? { runnerFactory: this.runnerFactory } : {}),
     });
     this.attachExecutorEvents(this.executor);
     this.installSignalHandlers();
@@ -116,7 +107,7 @@ export class Orchestrator extends EventEmitter {
             {
               id: 'task-0',
               adapter: this.defaultAdapter,
-              pendingInputs: [goal],
+              prompt: goal,
             },
           ],
         },

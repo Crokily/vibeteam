@@ -6,3 +6,8 @@ dist/
 coverage/
 .vscode/
 .vibeteam/
+.gemini-clipboard/
+test/agent-logs/
+test/*.md
+test/*.html
+test/*.txt

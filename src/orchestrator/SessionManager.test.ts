@@ -22,8 +22,8 @@ describe('SessionManager', () => {
   it('persists session state to disk', () => {
     const manager = SessionManager.create('test-goal', { baseDir: TEST_DIR });
     manager.updateTaskStatus('task-1', 'RUNNING');
-    manager.setPendingInputs('task-1', ['step-1']);
-    manager.setKeepAlive('task-1', true);
+    manager.appendLog('task-1', 'line-1');
+    manager.addHistory('initial prompt', 'task-1');
     manager.persist();
 
     const loaded = SessionManager.load(manager.getSession().id, { baseDir: TEST_DIR });
@@ -32,7 +32,9 @@ describe('SessionManager', () => {
     expect(session.id).toBe(manager.getSession().id);
     expect(session.goal).toBe('test-goal');
     expect(session.taskStatus['task-1']).toBe('RUNNING');
-    expect(session.pendingInputs['task-1']).toEqual(['step-1']);
-    expect(session.keepAlive['task-1']).toBe(true);
+    expect(session.logs['task-1']).toEqual(['line-1']);
+    expect(session.history.some((entry) => entry.includes('initial prompt'))).toBe(
+      true,
+    );
   });
 });

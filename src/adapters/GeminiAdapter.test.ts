@@ -1,17 +1,18 @@
 import * as path from 'path';
 import { describe, expect, it } from 'vitest';
 
-import { StandardHandlers } from '../core/automation/StandardHandlers';
 import { GeminiAdapter } from './GeminiAdapter';
 
 describe('GeminiAdapter', () => {
-  it('exposes an auto policy with approval args and fallback handler', () => {
+  it('builds headless args with positional prompt', () => {
     const adapter = new GeminiAdapter();
+    const config = adapter.getHeadlessLaunchConfig('Hello world');
 
-    expect(adapter.autoPolicy?.injectArgs).toEqual(['--approval-mode', 'yolo']);
-    expect(adapter.autoPolicy?.handlers?.includes(StandardHandlers.pressEnter)).toBe(
-      true,
-    );
+    expect(config.args).toContain('--approval-mode');
+    expect(config.args).toContain('yolo');
+    expect(config.args).toContain('Hello world');
+    expect(config.args?.includes('--prompt')).toBe(false);
+    expect(config.args?.includes('-p')).toBe(false);
   });
 
   it('loads patterns from a workspace-relative path', () => {

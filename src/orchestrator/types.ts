@@ -3,11 +3,13 @@ import { AgentEvent } from '../core/AgentEvent';
 import { AgentState } from './AgentState';
 import { TaskStatus, WorkflowSession } from './WorkflowSession';
 
+export type ExecutionMode = 'interactive' | 'headless';
+
 export type WorkflowTask = {
   id: string;
   adapter: IAgentAdapter;
-  pendingInputs?: string[];
-  keepAlive?: boolean;
+  executionMode?: ExecutionMode;
+  prompt?: string;
 };
 
 export type WorkflowStage = {
@@ -33,15 +35,19 @@ export type AgentRunnerLike = {
   off?(event: 'event', listener: (event: AgentEvent) => void): void;
 };
 
+export type RunnerFactoryContext = {
+  executionMode: ExecutionMode;
+  prompt?: string;
+};
+
 export type RunnerFactory = (
   adapter: IAgentAdapter,
   taskId?: string,
   launchConfig?: AgentLaunchConfig,
+  context?: RunnerFactoryContext,
 ) => AgentRunnerLike;
 
 export type OrchestratorOptions = {
-  autoApprove?: boolean;
-  autoApproveResponse?: string;
   runnerFactory?: RunnerFactory;
 };
 

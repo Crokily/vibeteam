@@ -45,27 +45,7 @@ export class SessionManager {
   initializeWorkflow(workflow: WorkflowDefinition): void {
     for (const stage of workflow.stages) {
       for (const task of stage.tasks) {
-        const hasPendingInputs = Object.prototype.hasOwnProperty.call(
-          this.session.pendingInputs,
-          task.id,
-        );
-        const hasKeepAlive = Object.prototype.hasOwnProperty.call(
-          this.session.keepAlive,
-          task.id,
-        );
-
         this.ensureTask(task.id);
-
-        if (!hasPendingInputs) {
-          this.setPendingInputs(
-            task.id,
-            Array.isArray(task.pendingInputs) ? task.pendingInputs : [],
-          );
-        }
-
-        if (!hasKeepAlive) {
-          this.setKeepAlive(task.id, task.keepAlive ?? false);
-        }
       }
     }
   }
@@ -82,29 +62,11 @@ export class SessionManager {
     if (!this.session.logs[taskId]) {
       this.session.logs[taskId] = [];
     }
-
-    if (!Object.prototype.hasOwnProperty.call(this.session.pendingInputs, taskId)) {
-      this.session.pendingInputs[taskId] = [];
-    }
-
-    if (!Object.prototype.hasOwnProperty.call(this.session.keepAlive, taskId)) {
-      this.session.keepAlive[taskId] = false;
-    }
   }
 
   updateTaskStatus(taskId: string, status: TaskStatus): void {
     this.ensureTask(taskId);
     this.session.taskStatus[taskId] = status;
-  }
-
-  setPendingInputs(taskId: string, inputs: string[]): void {
-    this.ensureTask(taskId);
-    this.session.pendingInputs[taskId] = [...inputs];
-  }
-
-  setKeepAlive(taskId: string, keepAlive: boolean): void {
-    this.ensureTask(taskId);
-    this.session.keepAlive[taskId] = keepAlive;
   }
 
   appendLog(taskId: string, chunk: string): void {

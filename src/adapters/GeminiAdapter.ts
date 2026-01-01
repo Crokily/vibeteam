@@ -8,13 +8,13 @@ import {
   PatternLoader,
 } from './PatternLoader';
 import geminiPatterns from './gemini-patterns.json';
-import { StandardHandlers } from '../core/automation/StandardHandlers';
 
 const DEFAULT_BUFFER_SIZE = 4096;
 
 export type GeminiAdapterOptions = {
   command?: string;
   args?: string[];
+  headlessArgs?: string[];
   cwd?: string;
   env?: NodeJS.ProcessEnv;
   cols?: number;
@@ -41,14 +41,11 @@ const normalizeChunk = (chunk: string): string =>
 
 export class GeminiAdapter extends EventEmitter implements IAgentAdapter {
   readonly name = 'gemini';
-  readonly autoPolicy = {
-    injectArgs: ['--approval-mode', 'yolo'],
-    handlers: [StandardHandlers.confirmYes, StandardHandlers.pressEnter],
-  };
   onStateChange?: (event: GeminiStateChange) => void;
 
   private readonly command: string;
   private readonly args: string[];
+  private readonly headlessArgs: string[];
   private readonly launchOptions: Omit<AgentLaunchConfig, 'command' | 'args'>;
   private readonly bufferSize: number;
   private readonly debugSniffer: boolean;
@@ -63,6 +60,8 @@ export class GeminiAdapter extends EventEmitter implements IAgentAdapter {
 
     this.command = options.command ?? 'gemini';
     this.args = options.args ?? ['chat'];
+    this.headlessArgs =
+      options.headlessArgs ?? this.args.filter((arg) => arg !== 'chat');
     this.launchOptions = {
       cwd: options.cwd,
       env: options.env,
@@ -98,6 +97,16 @@ export class GeminiAdapter extends EventEmitter implements IAgentAdapter {
     return {
       command: this.command,
       args: this.args,
+      ...this.launchOptions,
+    };
+  }
+
+  getHeadlessLaunchConfig(prompt: string): AgentLaunchConfig {
+    const normalizedPrompt = prompt.trim();
+
+    return {
+      command: this.command,
+      args: this.buildHeadlessArgs(normalizedPrompt),
       ...this.launchOptions,
     };
   }
@@ -149,6 +158,58 @@ export class GeminiAdapter extends EventEmitter implements IAgentAdapter {
       path.join(cwd, 'adapters', 'gemini-patterns.json'),
       path.join(cwd, 'gemini-patterns.json'),
     ];
+  }
+
+  private buildHeadlessArgs(prompt: string): string[] {
+    const withoutApproval = this.stripApprovalArgs(this.headlessArgs);
+    const withoutPrompt = this.stripPromptArgs(withoutApproval);
+    const withoutChat = withoutPrompt.filter((arg) => arg !== 'chat');
+
+    return [...withoutChat, '--approval-mode', 'yolo', prompt];
+  }
+
+  private stripPromptArgs(args: string[]): string[] {
+    const result: string[] = [];
+    let skipNext = false;
+
+    for (const arg of args) {
+      if (skipNext) {
+        skipNext = false;
+        continue;
+      }
+      if (arg === '--prompt' || arg === '-p') {
+        skipNext = true;
+        continue;
+      }
+      if (arg.startsWith('--prompt=')) {
+        continue;
+      }
+      result.push(arg);
+    }
+
+    return result;
+  }
+
+  private stripApprovalArgs(args: string[]): string[] {
+    const result: string[] = [];
+    let skipNext = false;
+
+    for (const arg of args) {
+      if (skipNext) {
+        skipNext = false;
+        continue;
+      }
+      if (arg === '--approval-mode') {
+        skipNext = true;
+        continue;
+      }
+      if (arg.startsWith('--approval-mode=')) {
+        continue;
+      }
+      result.push(arg);
+    }
+
+    return result;
   }
 
   private sniff(chunk: string): void {

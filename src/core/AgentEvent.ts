@@ -7,7 +7,7 @@ export type AgentDataEvent = {
 export type AgentExitEvent = {
   type: 'exit';
   code: number | null;
-  signal?: number | null;
+  signal?: number | string | null;
 };
 
 export type AgentErrorEvent = {

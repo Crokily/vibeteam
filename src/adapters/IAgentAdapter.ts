@@ -1,7 +1,5 @@
 import { EventEmitter } from 'events';
 
-import { AutoPolicy } from '../core/automation/types';
-
 export type AgentLaunchConfig = {
   command: string;
   args?: string[];
@@ -19,10 +17,10 @@ export type AdapterOutputEvent = {
 
 export interface IAgentAdapter extends EventEmitter {
   readonly name: string;
-  autoPolicy?: AutoPolicy;
   getLaunchConfig(): AgentLaunchConfig;
+  getHeadlessLaunchConfig?(prompt: string): AgentLaunchConfig;
   onRawOutput?(data: string): void;
   onCleanOutput?(data: string): void;
-  onExit?(code: number | null, signal?: number | null): void;
+  onExit?(code: number | null, signal?: number | string | null): void;
   onError?(error: Error): void;
 }

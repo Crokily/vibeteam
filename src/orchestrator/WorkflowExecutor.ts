@@ -3,12 +3,13 @@ import { EventEmitter } from 'events';
 import { AgentLaunchConfig, IAgentAdapter } from '../adapters/IAgentAdapter';
 import { AgentEvent } from '../core/AgentEvent';
 import { AgentRunner } from '../core/AgentRunner';
-import { InteractionContext } from '../core/automation/types';
+import { HeadlessRunner } from '../core/HeadlessRunner';
 import { AgentState } from './AgentState';
 import { SessionManager } from './SessionManager';
 import { TaskStatus, WorkflowSession } from './WorkflowSession';
 import {
   AgentRunnerLike,
+  ExecutionMode,
   OrchestratorAgentEvent,
   OrchestratorInteraction,
   OrchestratorTaskOutput,
@@ -20,8 +21,6 @@ import {
 } from './types';
 
 export type WorkflowExecutorOptions = {
-  autoApprove?: boolean;
-  autoApproveResponse?: string;
   runnerFactory?: RunnerFactory;
 };
 
@@ -44,7 +43,11 @@ type RunnerContext = {
   adapterEmitter: AdapterEmitter | null;
   taskId: string;
   stageIndex: number;
-  keepAlive: boolean;
+  executionMode: ExecutionMode;
+  prompt?: string;
+  promptInLaunch: boolean;
+  initialPromptSent: boolean;
+  initialPromptTimer: NodeJS.Timeout | null;
   onRunnerEvent: (event: AgentEvent) => void;
   onInteractionNeeded: (payload?: unknown) => void;
   onAdapterStateChange: (...args: unknown[]) => void;
@@ -67,9 +70,16 @@ const normalizeInput = (input: string): string => {
   return `${input}\r`;
 };
 
+const DEFAULT_EXECUTION_MODE: ExecutionMode = 'interactive';
+const INITIAL_PROMPT_TIMEOUT_MS = 1500;
+const READY_OUTPUT_PATTERNS = [
+  /type your message/i,
+  /ready for your command/i,
+  /let me know/i,
+];
+
 export class WorkflowExecutor extends EventEmitter {
-  private readonly autoApprove: boolean;
-  private readonly runnerFactory: RunnerFactory;
+  private readonly runnerFactory?: RunnerFactory;
   private readonly sessionManager: SessionManager;
 
   private readonly activeRunners = new Map<string, RunnerContext>();
@@ -78,10 +88,7 @@ export class WorkflowExecutor extends EventEmitter {
   constructor(sessionManager: SessionManager, options: WorkflowExecutorOptions = {}) {
     super();
     this.sessionManager = sessionManager;
-    this.autoApprove = options.autoApprove ?? false;
-    this.runnerFactory =
-      options.runnerFactory ??
-      ((adapter, _taskId, launchConfig) => new AgentRunner(adapter, launchConfig));
+    this.runnerFactory = options.runnerFactory;
   }
 
   getState(): AgentState {
@@ -180,11 +187,21 @@ export class WorkflowExecutor extends EventEmitter {
       throw new Error(`Task "${task.id}" is already running.`);
     }
 
-    const launchConfig = this.resolveLaunchConfig(task.adapter);
-    const runner = this.runnerFactory(task.adapter, task.id, launchConfig);
+    const executionMode = task.executionMode ?? DEFAULT_EXECUTION_MODE;
+    const prompt = task.prompt?.trim();
+    const { launchConfig, promptInLaunch } = this.resolveLaunchConfig(
+      task.adapter,
+      executionMode,
+      prompt,
+    );
+    const runner = this.createRunner(
+      task.adapter,
+      task.id,
+      launchConfig,
+      executionMode,
+      prompt,
+    );
     const adapterEmitter = asEmitter(task.adapter);
-    const session = this.sessionManager.getSession();
-    const keepAlive = session.keepAlive[task.id] ?? task.keepAlive ?? false;
 
     return new Promise((resolve, reject) => {
       const context: RunnerContext = {
@@ -193,7 +210,11 @@ export class WorkflowExecutor extends EventEmitter {
         adapterEmitter,
         taskId: task.id,
         stageIndex,
-        keepAlive,
+        executionMode,
+        prompt,
+        promptInLaunch,
+        initialPromptSent: false,
+        initialPromptTimer: null,
         onRunnerEvent: (event) => this.handleRunnerEvent(task.id, stageIndex, event),
         onInteractionNeeded: (payload) =>
           this.handleInteractionNeeded(task.id, payload),
@@ -216,6 +237,7 @@ export class WorkflowExecutor extends EventEmitter {
 
       try {
         runner.start();
+        this.prepareInitialPrompt(context);
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
         this.cleanupRunner(task.id);
@@ -227,19 +249,43 @@ export class WorkflowExecutor extends EventEmitter {
     });
   }
 
-  private resolveLaunchConfig(adapter: IAgentAdapter): AgentLaunchConfig {
-    const config = adapter.getLaunchConfig();
-    if (!this.autoApprove) {
-      return config;
+  private resolveLaunchConfig(
+    adapter: IAgentAdapter,
+    executionMode: ExecutionMode,
+    prompt?: string,
+  ): { launchConfig: AgentLaunchConfig; promptInLaunch: boolean } {
+    if (executionMode === 'headless' && prompt && adapter.getHeadlessLaunchConfig) {
+      return {
+        launchConfig: adapter.getHeadlessLaunchConfig(prompt),
+        promptInLaunch: true,
+      };
     }
 
-    const injectArgs = adapter.autoPolicy?.injectArgs;
-    if (!injectArgs || injectArgs.length === 0) {
-      return config;
+    return {
+      launchConfig: adapter.getLaunchConfig(),
+      promptInLaunch: false,
+    };
+  }
+
+  private createRunner(
+    adapter: IAgentAdapter,
+    taskId: string,
+    launchConfig: AgentLaunchConfig,
+    executionMode: ExecutionMode,
+    prompt?: string,
+  ): AgentRunnerLike {
+    if (this.runnerFactory) {
+      return this.runnerFactory(adapter, taskId, launchConfig, {
+        executionMode,
+        prompt,
+      });
     }
 
-    const mergedArgs = [...(config.args ?? []), ...injectArgs];
-    return { ...config, args: mergedArgs };
+    if (executionMode === 'headless') {
+      return new HeadlessRunner(adapter, launchConfig);
+    }
+
+    return new AgentRunner(adapter, launchConfig);
   }
 
   private sendInput(taskId: string, input: string): void {
@@ -251,6 +297,61 @@ export class WorkflowExecutor extends EventEmitter {
     const normalized = normalizeInput(input);
     context.runner.send(normalized);
     this.sessionManager.addHistory(input, taskId);
+  }
+
+  private prepareInitialPrompt(context: RunnerContext): void {
+    const prompt = context.prompt?.trim();
+    if (!prompt) {
+      return;
+    }
+
+    if (context.executionMode === 'headless') {
+      if (context.promptInLaunch) {
+        this.sessionManager.addHistory(prompt, context.taskId);
+      } else {
+        this.sendInput(context.taskId, prompt);
+      }
+      context.initialPromptSent = true;
+      return;
+    }
+
+    context.initialPromptTimer = setTimeout(() => {
+      this.maybeSendInitialPrompt(context, { force: true });
+    }, INITIAL_PROMPT_TIMEOUT_MS);
+  }
+
+  private maybeSendInitialPrompt(
+    context: RunnerContext,
+    options: { output?: string; force?: boolean } = {},
+  ): void {
+    if (context.executionMode !== 'interactive' || context.initialPromptSent) {
+      return;
+    }
+
+    const prompt = context.prompt?.trim();
+    if (!prompt) {
+      return;
+    }
+
+    if (!options.force) {
+      if (!options.output) {
+        return;
+      }
+      const ready = READY_OUTPUT_PATTERNS.some((pattern) =>
+        pattern.test(options.output ?? ''),
+      );
+      if (!ready) {
+        return;
+      }
+    }
+
+    this.sendInput(context.taskId, prompt);
+    context.initialPromptSent = true;
+
+    if (context.initialPromptTimer) {
+      clearTimeout(context.initialPromptTimer);
+      context.initialPromptTimer = null;
+    }
   }
 
   private updateTaskStatus(taskId: string, status: TaskStatus): void {
@@ -278,6 +379,10 @@ export class WorkflowExecutor extends EventEmitter {
     this.emit('agentEvent', payload);
 
     if (event.type === 'data') {
+      const context = this.activeRunners.get(taskId);
+      if (context) {
+        this.maybeSendInitialPrompt(context, { output: event.clean });
+      }
       this.sessionManager.appendLog(taskId, event.clean);
       const outputEvent: OrchestratorTaskOutput = {
         taskId,
@@ -309,40 +414,6 @@ export class WorkflowExecutor extends EventEmitter {
     }
   }
 
-  private handleIdleState(taskId: string): void {
-    const session = this.sessionManager.getSession();
-    const context = this.activeRunners.get(taskId);
-    if (!context) {
-      return;
-    }
-
-    if (!Object.prototype.hasOwnProperty.call(session.pendingInputs, taskId)) {
-      session.pendingInputs[taskId] = [];
-    }
-
-    const pendingInputs = session.pendingInputs[taskId];
-
-    if (pendingInputs.length === 0) {
-      this.updateTaskStatus(taskId, 'DONE');
-      this.cleanupRunner(taskId);
-      context.resolve();
-      return;
-    }
-
-    const nextInput = pendingInputs[0];
-    if (nextInput === undefined) {
-      return;
-    }
-
-    this.sendInput(taskId, nextInput);
-    pendingInputs.shift();
-    this.persistSession();
-
-    if (session.taskStatus[taskId] !== 'RUNNING') {
-      this.updateTaskStatus(taskId, 'RUNNING');
-    }
-  }
-
   private handleAdapterStateChange(taskId: string, ...args: unknown[]): void {
     const event = args[0] as AdapterStateChange;
     const stateName = event?.to?.name?.toLowerCase();
@@ -351,27 +422,33 @@ export class WorkflowExecutor extends EventEmitter {
     }
 
     if (stateName.includes('interaction_idle')) {
-      this.handleIdleState(taskId);
-      return;
-    }
-
-    if (stateName.includes('interaction')) {
-      this.handleInteractionNeeded(taskId, { source: 'stateChange', state: event.to });
-    }
-  }
-
-  private handleInteractionNeeded(taskId: string, payload?: unknown): void {
-    const autoAction = this.resolveAutoAction(taskId, payload);
-    if (autoAction !== null) {
-      try {
-        this.sendInput(taskId, autoAction);
-        this.updateTaskStatus(taskId, 'RUNNING');
-      } catch (error) {
-        this.emit('error', error);
+      const context = this.activeRunners.get(taskId);
+      if (context) {
+        this.maybeSendInitialPrompt(context, { force: true });
+      }
+      const shouldNotify =
+        !context ||
+        context.executionMode === 'headless' ||
+        context.initialPromptSent ||
+        !context.prompt;
+      if (shouldNotify) {
+        this.handleInteractionNeeded(taskId, {
+          source: 'stateChange',
+          state: event.to,
+        });
       }
       return;
     }
 
+    if (stateName.includes('interaction')) {
+      this.handleInteractionNeeded(taskId, {
+        source: 'stateChange',
+        state: event.to,
+      });
+    }
+  }
+
+  private handleInteractionNeeded(taskId: string, payload?: unknown): void {
     this.updateTaskStatus(taskId, 'WAITING_FOR_USER');
 
     const event: OrchestratorInteraction = {
@@ -380,42 +457,6 @@ export class WorkflowExecutor extends EventEmitter {
       payload,
     };
     this.emit('interactionNeeded', event);
-  }
-
-  private resolveAutoAction(taskId: string, payload?: unknown): string | null {
-    if (!this.autoApprove) {
-      return null;
-    }
-
-    const context = this.activeRunners.get(taskId);
-    if (!context) {
-      return null;
-    }
-
-    const handlers = context.adapter.autoPolicy?.handlers;
-    if (!handlers || handlers.length === 0) {
-      return null;
-    }
-
-    const interactionContext: InteractionContext = {
-      taskId,
-      adapter: context.adapter,
-      payload,
-    };
-
-    for (const handler of handlers) {
-      try {
-        const action = handler(interactionContext);
-        if (action !== null && action !== undefined) {
-          return action;
-        }
-      } catch (error) {
-        const err = error instanceof Error ? error : new Error(String(error));
-        this.emit('error', err);
-      }
-    }
-
-    return null;
   }
 
   private attachAdapterListeners(
@@ -482,9 +523,12 @@ export class WorkflowExecutor extends EventEmitter {
       );
     }
 
-    if (!context.keepAlive) {
-      context.runner.stop();
+    if (context.initialPromptTimer) {
+      clearTimeout(context.initialPromptTimer);
+      context.initialPromptTimer = null;
     }
+
+    context.runner.stop();
     this.activeRunners.delete(taskId);
     this.recalculateState();
   }
@@ -563,23 +607,26 @@ export class WorkflowExecutor extends EventEmitter {
         if (!task.id || !task.id.trim()) {
           throw new Error('Workflow task is missing an id.');
         }
-        if (task.pendingInputs !== undefined) {
-          if (!Array.isArray(task.pendingInputs)) {
-            throw new Error(
-              `Workflow task "${task.id}" pendingInputs must be an array.`,
-            );
-          }
-          for (const input of task.pendingInputs) {
-            if (typeof input !== 'string') {
-              throw new Error(
-                `Workflow task "${task.id}" pendingInputs must be strings.`,
-              );
-            }
-          }
-        }
-        if (task.keepAlive !== undefined && typeof task.keepAlive !== 'boolean') {
+        if (
+          task.executionMode !== undefined &&
+          task.executionMode !== 'interactive' &&
+          task.executionMode !== 'headless'
+        ) {
           throw new Error(
-            `Workflow task "${task.id}" keepAlive must be a boolean.`,
+            `Workflow task "${task.id}" executionMode must be "interactive" or "headless".`,
+          );
+        }
+        if (task.prompt !== undefined && typeof task.prompt !== 'string') {
+          throw new Error(
+            `Workflow task "${task.id}" prompt must be a string.`,
+          );
+        }
+        if (
+          task.executionMode === 'headless' &&
+          (!task.prompt || !task.prompt.trim())
+        ) {
+          throw new Error(
+            `Workflow task "${task.id}" prompt is required for headless mode.`,
           );
         }
         if (seenTaskIds.has(task.id)) {

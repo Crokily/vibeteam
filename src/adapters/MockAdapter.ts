@@ -38,4 +38,12 @@ export class MockAdapter extends EventEmitter implements IAgentAdapter {
       name: 'xterm-color',
     };
   }
+
+  getHeadlessLaunchConfig(prompt: string): AgentLaunchConfig {
+    return {
+      command: process.execPath,
+      args: ['-e', `console.log(${JSON.stringify(prompt)});`],
+      name: 'xterm-color',
+    };
+  }
 }

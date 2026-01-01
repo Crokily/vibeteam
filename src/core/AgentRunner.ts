@@ -12,7 +12,7 @@ export type AgentOutput = {
 
 export type AgentExit = {
   code: number | null;
-  signal?: number | null;
+  signal?: number | string | null;
 };
 
 export class AgentRunner extends EventEmitter {
