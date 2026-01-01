@@ -2,6 +2,7 @@
 
 ## Purpose
 Standardize interactions with diverse AI CLI tools by providing a unified adapter interface, externalized pattern-based state detection, and non-intrusive output monitoring.
+
 ## Requirements
 ### Requirement: Externalized Pattern Configuration
 The system SHALL load CLI interaction rules from an external JSON file to ensure maintainability.
@@ -19,16 +20,14 @@ The system SHALL monitor the CLI session state without interfering with the visu
 - **AND** emits an event for the UI
 - **AND** prevents the raw prompt from leaking to the main process stdout
 
-### Requirement: Gemini Auto Policy
-The Gemini Adapter SHALL provide an automation policy optimized for the tool's capabilities.
+### Requirement: Gemini Headless Launch Config
+The Gemini Adapter SHALL provide a headless launch configuration that runs in yolo mode and accepts a positional prompt.
 
-#### Scenario: Yolo Mode Injection
-- **WHEN** the Gemini Adapter's policy is accessed
-- **THEN** it includes `--approval-mode yolo` in `injectArgs`
-
-#### Scenario: Fallback Handler
-- **WHEN** the Gemini Adapter's policy is accessed
-- **THEN** it includes a runtime handler that presses Enter for any unmatched interactions as a fallback
+#### Scenario: Positional Prompt for Headless Mode
+- **WHEN** the adapter is asked for a headless launch config with a prompt
+- **THEN** the arguments include `--approval-mode yolo`
+- **AND** the prompt is passed as a positional argument
+- **AND** no `--prompt` or `-p` flags are used
 
 ### Requirement: Robust Path Resolution
 Adapters SHALL resolve configuration paths reliably regardless of execution context (source vs bundle).
@@ -40,4 +39,3 @@ Adapters SHALL resolve configuration paths reliably regardless of execution cont
 #### Scenario: CWD-based Fallback
 - **WHEN** no path is provided
 - **THEN** it resolves paths relative to the project root/CWD, avoiding fragile `__dirname` references
-
