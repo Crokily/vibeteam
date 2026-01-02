@@ -6,7 +6,7 @@ import { GeminiAdapter } from './gemini';
 describe('GeminiAdapter', () => {
   it('builds headless args with positional prompt', () => {
     const adapter = new GeminiAdapter();
-    const config = adapter.getHeadlessLaunchConfig('Hello world');
+    const config = adapter.getLaunchConfig('headless', 'Hello world');
 
     expect(config.args).toContain('--approval-mode');
     expect(config.args).toContain('yolo');
@@ -15,11 +15,27 @@ describe('GeminiAdapter', () => {
     expect(config.args?.includes('-p')).toBe(false);
   });
 
-  it('loads patterns from a workspace-relative path', () => {
+  it('builds interactive args with positional prompt', () => {
+    const adapter = new GeminiAdapter();
+    const config = adapter.getLaunchConfig('interactive', 'Hello world');
+
+    expect(config.args).toContain('-i');
+    expect(config.args).toContain('Hello world');
+    expect(config.args?.includes('--approval-mode')).toBe(false);
+  });
+
+  it('includes extraArgs between mode args and prompt', () => {
+    const adapter = new GeminiAdapter();
+    const config = adapter.getLaunchConfig('interactive', 'Hello', ['--model', 'gemini-2.0']);
+
+    expect(config.args).toEqual(['-i', '--model', 'gemini-2.0', 'Hello']);
+  });
+
+  it('loads config from a workspace-relative path', () => {
     const adapter = new GeminiAdapter({
-      patternsPath: path.join('src', 'adapters', 'gemini', 'patterns.json'),
+      configPath: path.join('src', 'adapters', 'gemini', 'config.json'),
     });
 
-    expect(adapter.getPatternErrors()).toEqual([]);
+    expect(adapter.getConfigErrors()).toEqual([]);
   });
 });

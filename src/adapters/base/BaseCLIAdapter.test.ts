@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 import { BaseCLIAdapter, BaseAdapterOptions } from './BaseCLIAdapter';
-import { AgentLaunchConfig } from '../IAgentAdapter';
 
 class TestAdapter extends BaseCLIAdapter {
   readonly name = 'test-adapter';
@@ -8,19 +7,16 @@ class TestAdapter extends BaseCLIAdapter {
   constructor(options: BaseAdapterOptions = {}) {
     super({
         ...options,
-        name: options.name ?? 'test-adapter'
+        name: options.name ?? 'test-adapter',
+        modes: options.modes ?? {
+          interactive: { baseArgs: ['--interactive'], promptPosition: 'last' },
+          headless: { baseArgs: ['--headless'], promptPosition: 'last' },
+        },
     });
   }
 
-  protected getDefaultConfig(): AgentLaunchConfig {
-    return {
-      command: 'test-cmd',
-      args: ['arg1'],
-    };
-  }
-
-  protected buildHeadlessArgs(prompt: string): string[] {
-    return ['headless', prompt];
+  protected getDefaultCommand(): string {
+    return 'test-cmd';
   }
   
   // Expose for testing
@@ -36,9 +32,9 @@ describe('BaseCLIAdapter', () => {
       env: { TEST: '1' }
     });
 
-    const config = adapter.getLaunchConfig();
+    const config = adapter.getLaunchConfig('interactive', 'hello');
     expect(config.command).toBe('test-cmd');
-    expect(config.args).toEqual(['arg1']);
+    expect(config.args).toEqual(['--interactive', 'hello']);
     expect(config.cwd).toBe('/tmp');
     expect(config.env).toEqual({ TEST: '1' });
     expect(config.name).toBe('test-adapter');
@@ -46,10 +42,17 @@ describe('BaseCLIAdapter', () => {
 
   it('builds headless config', () => {
     const adapter = new TestAdapter();
-    const config = adapter.getHeadlessLaunchConfig('hello');
+    const config = adapter.getLaunchConfig('headless', 'hello');
 
     expect(config.command).toBe('test-cmd');
-    expect(config.args).toEqual(['headless', 'hello']);
+    expect(config.args).toEqual(['--headless', 'hello']);
+  });
+
+  it('includes extraArgs between mode args and prompt', () => {
+    const adapter = new TestAdapter();
+    const config = adapter.getLaunchConfig('interactive', 'hello', ['--extra']);
+
+    expect(config.args).toEqual(['--interactive', '--extra', 'hello']);
   });
 
   it('emits state changes when pattern matches', () => {

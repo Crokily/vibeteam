@@ -1,29 +1,35 @@
 import { EventEmitter } from 'events';
 import { describe, expect, it } from 'vitest';
 
-import { IAgentAdapter } from '../../adapters/IAgentAdapter';
+import { ExecutionMode, IAgentAdapter } from '../../adapters/IAgentAdapter';
 import { AgentState } from '../state/AgentState';
 import { SessionManager } from '../state/SessionManager';
 import { WorkflowExecutor } from './WorkflowExecutor';
-import { ExecutionMode, RunnerFactory, WorkflowDefinition } from '../types';
+import { RunnerFactory, WorkflowDefinition } from '../types';
 
 class MockAdapter extends EventEmitter implements IAgentAdapter {
   readonly name: string;
+  lastLaunchMode?: ExecutionMode;
+  lastLaunchPrompt?: string;
+  lastLaunchExtraArgs?: string[];
 
   constructor(name: string) {
     super();
     this.name = name;
   }
 
-  getLaunchConfig() {
+  getLaunchConfig(
+    mode: ExecutionMode,
+    prompt?: string,
+    extraArgs?: string[],
+  ) {
+    this.lastLaunchMode = mode;
+    this.lastLaunchPrompt = prompt;
+    this.lastLaunchExtraArgs = extraArgs;
     return {
       command: process.execPath,
       args: ['-e', 'process.exit(0)'],
     };
-  }
-
-  getHeadlessLaunchConfig(_prompt: string) {
-    return this.getLaunchConfig();
   }
 }
 
@@ -90,7 +96,7 @@ const createWorkflow = (
 });
 
 describe('WorkflowExecutor', () => {
-  it('sends the initial prompt when ready output appears', async () => {
+  it('passes prompt via getLaunchConfig (not stdin)', async () => {
     const adapter = new MockAdapter('interaction');
     const runner = new FakeRunner();
     const executor = createExecutor(() => runner);
@@ -100,13 +106,10 @@ describe('WorkflowExecutor', () => {
     );
     await nextTick();
 
-    runner.emit('event', {
-      type: 'data',
-      raw: 'Ready for your command',
-      clean: 'Ready for your command',
-    });
-
-    expect(runner.sent).toEqual(['Build snake game\r']);
+    // Prompt is passed to adapter.getLaunchConfig, not sent via stdin
+    expect(adapter.lastLaunchMode).toBe('interactive');
+    expect(adapter.lastLaunchPrompt).toBe('Build snake game');
+    expect(runner.sent).toEqual([]); // No stdin writes for initial prompt
 
     runner.emitExit();
     await runPromise;

@@ -1,15 +1,16 @@
-import { AgentLaunchConfig, IAgentAdapter } from '../adapters/IAgentAdapter';
+import { AgentLaunchConfig, ExecutionMode, IAgentAdapter } from '../adapters/IAgentAdapter';
 import { AgentEvent } from '../core/AgentEvent';
 import { AgentState } from './state/AgentState';
 import { TaskStatus, WorkflowSession } from './state/WorkflowSession';
 
-export type ExecutionMode = 'interactive' | 'headless';
+export type { ExecutionMode } from '../adapters/IAgentAdapter';
 
 export type WorkflowTask = {
   id: string;
   adapter: IAgentAdapter;
   executionMode?: ExecutionMode;
   prompt?: string;
+  extraArgs?: string[];
 };
 
 export type WorkflowStage = {
@@ -58,10 +59,6 @@ export type RunnerContext = {
   taskId: string;
   stageIndex: number;
   executionMode: ExecutionMode;
-  prompt?: string;
-  promptInLaunch: boolean;
-  initialPromptSent: boolean;
-  initialPromptTimer: NodeJS.Timeout | null;
   onRunnerEvent: (event: AgentEvent) => void;
   onInteractionNeeded: (payload?: unknown) => void;
   onAdapterStateChange: (...args: unknown[]) => void;

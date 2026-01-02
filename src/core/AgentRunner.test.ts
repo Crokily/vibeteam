@@ -30,7 +30,9 @@ const waitForPong = (runner: AgentRunner, timeoutMs = 3000) =>
 
 describe('AgentRunner + MockAdapter', () => {
   it('emits pong on ping', async () => {
-    const runner = new AgentRunner(new MockAdapter());
+    const adapter = new MockAdapter();
+    const launchConfig = adapter.getLaunchConfig('interactive');
+    const runner = new AgentRunner(adapter, launchConfig);
 
     runner.start();
 

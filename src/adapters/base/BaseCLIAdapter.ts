@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 
-import { AgentLaunchConfig, IAgentAdapter } from '../IAgentAdapter';
+import { AgentLaunchConfig, ExecutionMode, IAgentAdapter, ModeConfig, ModesConfig } from '../IAgentAdapter';
 import { CompiledPattern } from '../PatternLoader';
 import { OutputSniffer, AdapterState } from './OutputSniffer';
 
@@ -16,6 +16,9 @@ export type BaseAdapterOptions = {
   patterns?: CompiledPattern[];
   bufferSize?: number;
   debugSniffer?: boolean;
+
+  // Mode Options
+  modes?: ModesConfig;
 };
 
 export type AdapterStateChange = {
@@ -28,12 +31,12 @@ export abstract class BaseCLIAdapter extends EventEmitter implements IAgentAdapt
   abstract readonly name: string;
   
   // To be implemented by subclasses
-  protected abstract getDefaultConfig(): AgentLaunchConfig;
-  protected abstract buildHeadlessArgs(prompt: string): string[];
+  protected abstract getDefaultCommand(): string;
 
   private readonly launchOptions: Omit<AgentLaunchConfig, 'command' | 'args'>;
   private readonly sniffer: OutputSniffer;
   private readonly debugSniffer: boolean;
+  private readonly modes: ModesConfig;
   
   private state: AdapterState | null = null;
 
@@ -51,23 +54,53 @@ export abstract class BaseCLIAdapter extends EventEmitter implements IAgentAdapt
       options.patterns ?? [],
       options.bufferSize
     );
+    this.modes = options.modes ?? {};
   }
 
-  getLaunchConfig(): AgentLaunchConfig {
-    const defaults = this.getDefaultConfig();
+  getLaunchConfig(
+    mode: ExecutionMode,
+    prompt?: string,
+    extraArgs?: string[],
+  ): AgentLaunchConfig {
+    const modeConfig = this.modes[mode];
+    const args = this.buildArgs(modeConfig, prompt, extraArgs);
+
     return {
-      ...defaults,
+      command: this.getDefaultCommand(),
+      args,
       ...this.launchOptions,
     };
   }
 
-  getHeadlessLaunchConfig(prompt: string): AgentLaunchConfig {
-    const defaults = this.getDefaultConfig();
-    return {
-      command: defaults.command,
-      args: this.buildHeadlessArgs(prompt.trim()),
-      ...this.launchOptions,
-    };
+  private buildArgs(
+    modeConfig: ModeConfig | undefined,
+    prompt?: string,
+    extraArgs?: string[],
+  ): string[] {
+    const args: string[] = [];
+
+    // 1. Mode base args
+    if (modeConfig?.baseArgs) {
+      args.push(...modeConfig.baseArgs);
+    }
+
+    // 2. Extra args from task
+    if (extraArgs && extraArgs.length > 0) {
+      args.push(...extraArgs);
+    }
+
+    // 3. Prompt
+    if (prompt) {
+      const trimmed = prompt.trim();
+      if (modeConfig?.promptPosition === 'flag' && modeConfig.promptFlag) {
+        args.push(modeConfig.promptFlag, trimmed);
+      } else {
+        // Default: last position
+        args.push(trimmed);
+      }
+    }
+
+    return args;
   }
 
   onCleanOutput(data: string): void {

@@ -9,12 +9,10 @@ import {
   RunnerContext,
 } from '../types';
 import { detachAdapterListeners } from './runnerUtils';
-import { maybeSendInitialPrompt } from './runnerPrompt';
 
 export type TaskRunnerDeps = {
   sessionManager: SessionManager;
   activeRunners: Map<string, RunnerContext>;
-  sendContextInput: (context: RunnerContext, input: string) => void;
   updateTaskStatus: (taskId: string, status: TaskStatus) => void;
   emit: (event: string, ...args: unknown[]) => boolean;
 };
@@ -35,11 +33,6 @@ export const cleanupRunner = (deps: TaskRunnerDeps, taskId: string): void => {
       context.onInteractionNeeded,
       context.onAdapterStateChange,
     );
-  }
-
-  if (context.initialPromptTimer) {
-    clearTimeout(context.initialPromptTimer);
-    context.initialPromptTimer = null;
   }
 
   context.runner.stop();
@@ -72,25 +65,7 @@ export const handleAdapterStateChange = (
     return;
   }
 
-  if (stateName.includes('interaction_idle')) {
-    const context = deps.activeRunners.get(taskId);
-    if (context) {
-      maybeSendInitialPrompt(context, deps.sendContextInput, { force: true });
-    }
-    const shouldNotify =
-      !context ||
-      context.executionMode === 'headless' ||
-      context.initialPromptSent ||
-      !context.prompt;
-    if (shouldNotify) {
-      handleInteractionNeeded(deps, taskId, {
-        source: 'stateChange',
-        state: event.to,
-      });
-    }
-    return;
-  }
-
+  // Interaction states trigger user notification
   if (stateName.includes('interaction')) {
     handleInteractionNeeded(deps, taskId, {
       source: 'stateChange',
@@ -116,10 +91,6 @@ export const handleRunnerEvent = (
   deps.emit('agentEvent', payload);
 
   if (event.type === 'data') {
-    const context = deps.activeRunners.get(taskId);
-    if (context) {
-      maybeSendInitialPrompt(context, deps.sendContextInput, { output: event.clean });
-    }
     deps.sessionManager.appendLog(taskId, event.clean);
     const outputEvent: OrchestratorTaskOutput = {
       taskId,

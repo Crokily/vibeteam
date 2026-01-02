@@ -20,7 +20,7 @@ export class HeadlessRunner extends EventEmitter {
 
   constructor(
     private readonly adapter: IAgentAdapter,
-    private readonly launchConfigOverride?: AgentLaunchConfig,
+    private readonly launchConfig: AgentLaunchConfig,
   ) {
     super();
   }
@@ -30,7 +30,7 @@ export class HeadlessRunner extends EventEmitter {
       throw new Error('HeadlessRunner is already started.');
     }
 
-    const config = this.launchConfigOverride ?? this.adapter.getLaunchConfig();
+    const config = this.launchConfig;
 
     try {
       const child = spawn(config.command, config.args ?? [], {

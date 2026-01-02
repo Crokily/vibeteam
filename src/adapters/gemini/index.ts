@@ -1,59 +1,45 @@
 import { BaseCLIAdapter, BaseAdapterOptions } from '../base/BaseCLIAdapter';
-import { AgentLaunchConfig } from '../IAgentAdapter';
-import { loadGeminiPatterns } from './patternLoader';
-import { buildHeadlessArgs } from './args';
+import { loadGeminiConfig } from './configLoader';
 
-export type GeminiAdapterOptions = Omit<BaseAdapterOptions, 'patterns'> & {
+export type GeminiAdapterOptions = Omit<BaseAdapterOptions, 'patterns' | 'modes'> & {
   command?: string;
-  args?: string[];
-  headlessArgs?: string[];
-  patternsPath?: string;
+  configPath?: string;
 };
 
 export class GeminiAdapter extends BaseCLIAdapter {
   readonly name = 'gemini';
   
   private readonly command: string;
-  private readonly args: string[];
-  private readonly headlessArgs: string[];
-  private readonly patternLoadErrors: string[];
+  private readonly configLoadErrors: string[];
 
   constructor(options: GeminiAdapterOptions = {}) {
-    const patternResult = loadGeminiPatterns(options.patternsPath);
+    const configResult = loadGeminiConfig(options.configPath);
     
     super({
       ...options,
-      patterns: patternResult.patterns,
+      patterns: configResult.patterns,
+      modes: configResult.modes,
       name: options.name ?? 'gemini',
     });
 
     this.command = options.command ?? 'gemini';
-    this.args = options.args ?? ['chat'];
-    this.headlessArgs = options.headlessArgs ?? this.args.filter(a => a !== 'chat');
-    this.patternLoadErrors = patternResult.errors;
+    this.configLoadErrors = configResult.errors;
 
     if (options.debugSniffer) {
-       for (const err of this.patternLoadErrors) {
-           this.logSniffer(`pattern load warning: ${err}`);
-       }
-       if (patternResult.patterns.length === 0) {
-           this.logSniffer('no patterns loaded; state detection disabled.');
-       }
+      for (const err of this.configLoadErrors) {
+        this.logSniffer(`config load warning: ${err}`);
+      }
+      if (configResult.patterns.length === 0) {
+        this.logSniffer('no patterns loaded; state detection disabled.');
+      }
     }
   }
 
-  getPatternErrors(): string[] {
-      return this.patternLoadErrors;
+  getConfigErrors(): string[] {
+    return this.configLoadErrors;
   }
 
-  protected getDefaultConfig(): AgentLaunchConfig {
-    return {
-      command: this.command,
-      args: this.args,
-    };
-  }
-
-  protected buildHeadlessArgs(prompt: string): string[] {
-    return buildHeadlessArgs(this.headlessArgs, prompt);
+  protected getDefaultCommand(): string {
+    return this.command;
   }
 }

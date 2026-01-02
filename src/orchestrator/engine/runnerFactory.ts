@@ -1,29 +1,15 @@
-import { AgentLaunchConfig, IAgentAdapter } from '../../adapters/IAgentAdapter';
+import { AgentLaunchConfig, ExecutionMode, IAgentAdapter } from '../../adapters/IAgentAdapter';
 import { AgentRunner } from '../../core/AgentRunner';
 import { HeadlessRunner } from '../../core/HeadlessRunner';
-import { AgentRunnerLike, ExecutionMode, RunnerFactory } from '../types';
-
-export type LaunchConfigResult = {
-  launchConfig: AgentLaunchConfig;
-  promptInLaunch: boolean;
-};
+import { AgentRunnerLike, RunnerFactory } from '../types';
 
 export const resolveLaunchConfig = (
   adapter: IAgentAdapter,
   executionMode: ExecutionMode,
   prompt?: string,
-): LaunchConfigResult => {
-  if (executionMode === 'headless' && prompt && adapter.getHeadlessLaunchConfig) {
-    return {
-      launchConfig: adapter.getHeadlessLaunchConfig(prompt),
-      promptInLaunch: true,
-    };
-  }
-
-  return {
-    launchConfig: adapter.getLaunchConfig(),
-    promptInLaunch: false,
-  };
+  extraArgs?: string[],
+): AgentLaunchConfig => {
+  return adapter.getLaunchConfig(executionMode, prompt, extraArgs);
 };
 
 export const createRunner = (

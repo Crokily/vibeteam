@@ -18,7 +18,7 @@ The system SHALL define an `IAgentAdapter` contract to normalize interactions wi
 
 #### Scenario: Launch Configuration
 - **WHEN** an adapter is queried for launch config
-- **THEN** it returns the specific command and arguments (e.g., `['gemini', 'chat']`)
+- **THEN** it returns the specific command and arguments (e.g., `['gemini']`)
 
 ### Requirement: Output Sanitization
 The system SHALL provide utilities to process raw terminal output.

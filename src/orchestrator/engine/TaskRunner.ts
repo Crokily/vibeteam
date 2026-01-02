@@ -1,9 +1,9 @@
 import { EventEmitter } from 'events';
 
+import { ExecutionMode } from '../../adapters/IAgentAdapter';
 import { SessionManager } from '../state/SessionManager';
 import { TaskStatus } from '../state/WorkflowSession';
 import {
-  ExecutionMode,
   OrchestratorTaskStatusChange,
   RunnerContext,
   RunnerFactory,
@@ -11,7 +11,7 @@ import {
 } from '../types';
 import { asEmitter, attachAdapterListeners, normalizeInput } from './runnerUtils';
 import { createRunner, resolveLaunchConfig } from './runnerFactory';
-import { prepareInitialPrompt } from './runnerPrompt';
+import { recordInitialPrompt } from './runnerPrompt';
 import {
   cleanupRunner,
   handleAdapterStateChange,
@@ -30,10 +30,6 @@ export class TaskRunner extends EventEmitter {
   private readonly sessionManager: SessionManager;
   private readonly runnerFactory?: RunnerFactory;
   private readonly activeRunners = new Map<string, RunnerContext>();
-
-  private readonly sendContextInput = (context: RunnerContext, input: string): void => {
-    this.sendInput(context.taskId, input);
-  };
 
   constructor(sessionManager: SessionManager, options: TaskRunnerOptions = {}) {
     super();
@@ -56,10 +52,11 @@ export class TaskRunner extends EventEmitter {
 
     const executionMode = task.executionMode ?? DEFAULT_EXECUTION_MODE;
     const prompt = task.prompt?.trim();
-    const { launchConfig, promptInLaunch } = resolveLaunchConfig(
+    const launchConfig = resolveLaunchConfig(
       task.adapter,
       executionMode,
       prompt,
+      task.extraArgs,
     );
     const runner = createRunner(
       this.runnerFactory,
@@ -80,10 +77,6 @@ export class TaskRunner extends EventEmitter {
         taskId: task.id,
         stageIndex,
         executionMode,
-        prompt,
-        promptInLaunch,
-        initialPromptSent: false,
-        initialPromptTimer: null,
         onRunnerEvent: (event) =>
           handleRunnerEvent(handlerDeps, task.id, stageIndex, event),
         onInteractionNeeded: (payload) =>
@@ -107,7 +100,7 @@ export class TaskRunner extends EventEmitter {
 
       try {
         runner.start();
-        prepareInitialPrompt(context, this.sessionManager, this.sendContextInput);
+        recordInitialPrompt(this.sessionManager, task.id, prompt);
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
         cleanupRunner(handlerDeps, task.id);
@@ -176,7 +169,6 @@ export class TaskRunner extends EventEmitter {
     return {
       sessionManager: this.sessionManager,
       activeRunners: this.activeRunners,
-      sendContextInput: this.sendContextInput,
       updateTaskStatus: this.updateTaskStatus.bind(this),
       emit: this.emit.bind(this),
     };

@@ -9,5 +9,15 @@
       "flags": "i",
       "description": "Gemini CLI execution confirmation menu"
     }
+  },
+  "modes": {
+    "interactive": {
+      "baseArgs": ["-i"],
+      "promptPosition": "last"
+    },
+    "headless": {
+      "baseArgs": ["--approval-mode", "yolo"],
+      "promptPosition": "last"
+    }
   }
 }

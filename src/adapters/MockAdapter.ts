@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 
-import { AgentLaunchConfig, IAgentAdapter } from './IAgentAdapter';
+import { AgentLaunchConfig, ExecutionMode, IAgentAdapter } from './IAgentAdapter';
 
 const MOCK_SCRIPT = [
   "process.stdin.setEncoding('utf8');",
@@ -31,18 +31,21 @@ export class MockAdapter extends EventEmitter implements IAgentAdapter {
     super();
   }
 
-  getLaunchConfig(): AgentLaunchConfig {
+  getLaunchConfig(
+    mode: ExecutionMode,
+    prompt?: string,
+    _extraArgs?: string[],
+  ): AgentLaunchConfig {
+    if (mode === 'headless' && prompt) {
+      return {
+        command: process.execPath,
+        args: ['-e', `console.log(${JSON.stringify(prompt)});`],
+        name: 'xterm-color',
+      };
+    }
     return {
       command: process.execPath,
       args: ['-e', MOCK_SCRIPT],
-      name: 'xterm-color',
-    };
-  }
-
-  getHeadlessLaunchConfig(prompt: string): AgentLaunchConfig {
-    return {
-      command: process.execPath,
-      args: ['-e', `console.log(${JSON.stringify(prompt)});`],
       name: 'xterm-color',
     };
   }

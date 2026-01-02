@@ -1,5 +1,18 @@
 import { EventEmitter } from 'events';
 
+export type ExecutionMode = 'interactive' | 'headless';
+
+export type ModeConfig = {
+  baseArgs: string[];
+  promptPosition: 'last' | 'flag';
+  promptFlag?: string;
+};
+
+export type ModesConfig = {
+  interactive?: ModeConfig;
+  headless?: ModeConfig;
+};
+
 export type AgentLaunchConfig = {
   command: string;
   args?: string[];
@@ -17,8 +30,11 @@ export type AdapterOutputEvent = {
 
 export interface IAgentAdapter extends EventEmitter {
   readonly name: string;
-  getLaunchConfig(): AgentLaunchConfig;
-  getHeadlessLaunchConfig?(prompt: string): AgentLaunchConfig;
+  getLaunchConfig(
+    mode: ExecutionMode,
+    prompt?: string,
+    extraArgs?: string[],
+  ): AgentLaunchConfig;
   onRawOutput?(data: string): void;
   onCleanOutput?(data: string): void;
   onExit?(code: number | null, signal?: number | string | null): void;

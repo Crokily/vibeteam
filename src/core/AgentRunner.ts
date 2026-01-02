@@ -20,7 +20,7 @@ export class AgentRunner extends EventEmitter {
 
   constructor(
     private readonly adapter: IAgentAdapter,
-    private readonly launchConfigOverride?: AgentLaunchConfig,
+    private readonly launchConfig: AgentLaunchConfig,
   ) {
     super();
   }
@@ -30,7 +30,7 @@ export class AgentRunner extends EventEmitter {
       throw new Error('AgentRunner is already started.');
     }
 
-    const config = this.launchConfigOverride ?? this.adapter.getLaunchConfig();
+    const config = this.launchConfig;
 
     try {
       const ptyProcess = pty.spawn(config.command, config.args ?? [], {

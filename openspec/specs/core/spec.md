@@ -31,13 +31,10 @@ The system SHALL provide a headless runner that executes subprocesses without a 
 ### Requirement: Agent Adapter Interface
 The system SHALL define an `IAgentAdapter` contract to normalize interactions with diverse CLI tools.
 
-#### Scenario: Launch Configuration
+#### Scenario: Unified Launch Configuration
 - **WHEN** an adapter is queried for launch config
-- **THEN** it returns the specific command and arguments (e.g., `['gemini', 'chat']`)
-
-#### Scenario: Headless Launch Configuration
-- **WHEN** an adapter supports headless execution
-- **THEN** it MAY expose `getHeadlessLaunchConfig(prompt)` to build arguments for non-PTY execution
+- **THEN** it returns the specific command and arguments via `getLaunchConfig(mode, prompt?, extraArgs?)`
+- **AND** the mode parameter determines interactive vs headless argument sets
 
 ### Requirement: Output Sanitization
 The system SHALL provide utilities to process raw terminal output.
@@ -59,7 +56,7 @@ The system SHALL provide a modular orchestration layer to manage the execution f
 - **AND** waits for completion before moving to the next stage
 
 ### Requirement: Execution Modes
-The system SHALL allow each workflow task to declare an `executionMode` (`interactive` or `headless`) and a `prompt`.
+The system SHALL allow each workflow task to declare an `executionMode` (`interactive` or `headless`), a `prompt`, and optional `extraArgs` for custom CLI arguments.
 
 #### Scenario: Runner Selection
 - **WHEN** a task is `interactive`
@@ -71,10 +68,16 @@ The system SHALL allow each workflow task to declare an `executionMode` (`intera
 - **WHEN** a task is configured with `executionMode: headless` and no prompt
 - **THEN** workflow validation fails with an error
 
-#### Scenario: Interactive Prompt Dispatch
-- **WHEN** an interactive task starts
-- **THEN** the system sends the initial prompt once the CLI is ready or after a short timeout
-- **AND** records the prompt in session history
+#### Scenario: Unified Prompt Injection
+- **WHEN** any task starts with a prompt
+- **THEN** the prompt is injected into launch arguments via the adapter's mode configuration
+- **AND** the prompt is recorded in session history
+- **AND** no stdin-based prompt dispatch occurs
+
+#### Scenario: Extra Arguments Validation
+- **WHEN** a task includes `extraArgs`
+- **THEN** the system validates that all elements are strings
+- **AND** rejects the workflow if validation fails
 
 ### Requirement: Interaction Handling
 The system SHALL surface interaction requests to the UI layer.

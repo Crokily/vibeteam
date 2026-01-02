@@ -38,6 +38,20 @@ export const validateWorkflow = (workflow: WorkflowDefinition): void => {
           `Workflow task "${task.id}" prompt is required for headless mode.`,
         );
       }
+      if (task.extraArgs !== undefined) {
+        if (!Array.isArray(task.extraArgs)) {
+          throw new Error(
+            `Workflow task "${task.id}" extraArgs must be an array.`,
+          );
+        }
+        for (let i = 0; i < task.extraArgs.length; i++) {
+          if (typeof task.extraArgs[i] !== 'string') {
+            throw new Error(
+              `Workflow task "${task.id}" extraArgs[${i}] must be a string.`,
+            );
+          }
+        }
+      }
       if (seenTaskIds.has(task.id)) {
         throw new Error(`Workflow task id "${task.id}" must be unique.`);
       }
