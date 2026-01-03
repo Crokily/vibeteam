@@ -7,15 +7,19 @@
 <a name="english"></a>
 ## 🇬🇧 English
 
-**Vibeteam** is a Node.js-based **AI Workflow Orchestrator**. It acts as a "Technical Lead," managing and coordinating a specialized team of AI CLI tools (like Gemini CLI, Claude CLI, etc.).
+**Vibeteam** is a Node.js-based **AI Agent CLI Orchestrator**. It empowers you to freely orchestrate the AI Agent CLIs installed on your machine (like Claude Code, Codex CLI, Gemini CLI, OpenCode CLI, etc.).
 
-Unlike traditional integrations that rely on direct API calls, Vibeteam wraps third-party CLI tools using `node-pty`. This **non-intrusive** approach preserves the native capabilities of these tools (file access, built-in agents, toolchains) while enabling automated context passing and sophisticated orchestration.
+Think of Vibeteam as managing a **real software team**. You define the roles, workflows, and configurations for each Agent, and they execute tasks automatically.
+*   **100% Native Capabilities**: Since it wraps the actual CLI processes, you retain every feature of the original tools (file access, mcp servers, built-in reasoning, etc.).
+*   **Human-in-the-Loop**: You are the manager. You can jump into the workflow at any moment to guide, correct, or approve actions, just like directing a human team member.
 
 ### Key Features
 
-*   **Non-Intrusive Integration**: Wraps existing CLIs via pseudo-terminals (TTY), keeping their native behavior and "Vibe" intact.
-*   **Workflow Orchestration**: Define complex workflows with sequential stages and parallel tasks.
-*   **Human-in-the-Loop (HITL)**: Supports "Interactive Mode" where the user can attach to a running session, provide input, and then let the automation resume.
+*   **Orchestrate Your Local Agents**: Seamlessly coordinate multiple AI Agent CLIs installed on your system.
+*   **Real Team Simulation**: Assign specific roles (e.g., "React Specialist", "QA Lead") to different agent instances.
+*   **Non-Intrusive Integration**: Wraps CLIs via pseudo-terminals (TTY), preserving their native behavior and "Vibe".
+*   **Workflow Automation**: Define complex workflows with sequential stages and parallel tasks.
+*   **Seamless Intervention**: In "Interactive Mode," the system alerts you when an agent needs input, allowing you to attach and guide them before they resume automation.
 *   **Context Relay**: Automatically passes context (specs, decisions) from one agent to the next.
 
 ### Installation
@@ -59,7 +63,9 @@ const workflow = {
           id: 'dev-react',
           adapter: reactDev,
           executionMode: 'interactive', // Keeps running for user input
-          prompt: 'Implement a login form in React.'
+          prompt: 'Implement a login form in React.',
+          // Extra args passed to the CLI (e.g., "--model gpt-4")
+          extraArgs: ['--verbose', '--model', 'claude-3-opus']
         },
         {
           id: 'dev-vue', // Runs at the same time as dev-react
@@ -88,6 +94,7 @@ const workflow = {
 #### 3. Execution Modes & Manual Completion
 *   **`headless`**: Automated mode. The task runs until the process exits naturally.
 *   **`interactive`**: The process stays alive waiting for user input.
+    *   **User Intervention**: The system detects when the CLI is waiting for input (via pattern matching) and **alerts you**. You can then reply to the specific agent.
     *   **Manual Completion**: In interactive mode, if a CLI tool doesn't exit automatically, you can trigger `executor.completeTask(taskId)` to force-complete the task and advance the workflow.
 
 ### Contributing: Adding New Adapters
@@ -142,15 +149,19 @@ export class MyNewAdapter extends BaseCLIAdapter {
 <a name="chinese"></a>
 ## 🇨🇳 中文
 
-**Vibeteam** 是一个基于 Node.js 的 **AI 工作流编排器 (AI Workflow Orchestrator)**。它就像一位“技术负责人 (Tech Lead)”，管理并协调一系列专业的 AI CLI 工具（如 Gemini CLI, Claude CLI 等）。
+**Vibeteam** 是一个基于 Node.js 的 **AI Agent CLI 编排器**。它让你能够自由编排电脑上已安装的各种 AI Agent CLI（如 Claude Code, Codex CLI, Gemini CLI, OpenCode CLI 等）。
 
-不同于传统的 API 调用集成，Vibeteam 通过 `node-pty` 包装第三方 CLI 工具。这种**非侵入式**的方法完整保留了工具的原生能力（如文件系统访问、内置 Agent 能力、工具链），同时实现了自动化的上下文传递和复杂的流程编排。
+Vibeteam 就像是让你拥有了一个**真实的软件开发团队**。你可以定义每个 Agent 的角色、工作流和配置，让它们自动协作完成任务。
+*   **100% 保留原生能力**：Vibeteam 直接包装并运行 CLI 进程，因此你完全保留了这些工具的所有原生功能（包括文件访问、MCP 服务、内置推理能力等）。
+*   **随时指挥 (Human-in-the-Loop)**：你可以在工作流的任何时刻介入，进行指导、纠正或审批，就像指挥真实团队成员一样，随后让它们继续自动化执行。
 
 ### 核心特性
 
+*   **编排本地 Agents**：无缝协调系统上安装的多个 AI Agent CLI 工具。
+*   **真实团队模拟**：为不同的 Agent 实例分配特定角色（如“React 专家”、“QA 负责人”）。
 *   **非侵入式集成**：通过伪终端 (TTY) 包装现有 CLI，保留其原生的“Vibe”和所有功能。
-*   **工作流编排**：支持定义包含串行阶段 (Stages) 和并行任务 (Tasks) 的复杂工作流。
-*   **人机协作 (HITL)**：支持“交互模式”，用户可以随时挂载 (attach) 到正在运行的会话中进行干预，然后恢复自动化流程。
+*   **工作流自动化**：支持定义包含串行阶段 (Stages) 和并行任务 (Tasks) 的复杂工作流。
+*   **无缝介入**：在“交互模式”下，当 Agent 需要反馈时系统会主动提醒你。你可以随时挂载 (attach) 到会话中进行干预，然后恢复自动化流程。
 *   **上下文接力**：自动在不同 Agent 之间传递上下文（如需求文档、决策结果）。
 
 ### 安装
@@ -194,7 +205,9 @@ const workflow = {
           id: 'dev-react',
           adapter: reactDev,
           executionMode: 'interactive', // 交互模式：保持运行等待用户反馈
-          prompt: 'Implement a login form in React.'
+          prompt: 'Implement a login form in React.',
+          // 传递给 CLI 的额外参数 (例如指定模型或开启详细日志)
+          extraArgs: ['--verbose', '--model', 'claude-3-opus']
         },
         {
           id: 'dev-vue', // 与 dev-react 同时运行
@@ -223,6 +236,7 @@ const workflow = {
 #### 3. 执行模式与手动完成
 *   **`headless` (自动模式)**：任务自动运行直到进程自然退出。
 *   **`interactive` (交互模式)**：进程保持活跃，等待用户输入。
+    *   **用户介入提醒**：系统会通过正则匹配检测 CLI 是否处于“等待输入”状态，并主动**发出提醒**。你可以随后回复特定的 Agent。
     *   **手动完成 (Manual Completion)**：在交互模式下，如果 CLI 工具完成工作但未退出（例如进入了 REPL 循环），你可以调用 `executor.completeTask(taskId)` 强制标记任务完成并终止进程，从而推动工作流进入下一阶段。
 
 ### 贡献指南：新增 Adapter
