@@ -34,21 +34,22 @@ pnpm install
 
 A workflow in Vibeteam consists of **Adapters** (Roles) and **Stages** (Process).
 
-#### 1. Define Adapters (The Team)
-Adapters represent the specific CLI tools or "Agents" you want to use.
+#### 1. Choose Adapter Types (The Team)
+Adapter types identify which CLI tool to launch. Built-in types (like `gemini`) are registered when you import from the main entry point.
 
 ```typescript
-import { GeminiAdapter } from './src';
+import { adapterRegistry } from './src';
 
-// Define agents with specific working directories or configurations
-const reactDev = new GeminiAdapter({ name: 'ReactDev', cwd: './frontend' });
-const techLead = new GeminiAdapter({ name: 'TechLead', cwd: './' });
+// Built-in adapters like `gemini` are registered automatically.
+// Register custom adapters when you add new ones:
+// adapterRegistry.register('my-cli', MyCliAdapter);
 ```
 
 #### 2. Define the Workflow (The Plan)
 Workflows are structured into **Stages**.
 *   **Sequential Stages**: Stages run one after another. Stage 2 waits for Stage 1 to finish.
 *   **Parallel Tasks**: Tasks *within* a single stage run concurrently.
+*   **Task Adapter Config**: Each task can specify `name`, `cwd`, and `env`; `name` defaults to the task id.
 
 ```typescript
 const workflow = {
@@ -61,7 +62,9 @@ const workflow = {
       tasks: [
         {
           id: 'dev-react',
-          adapter: reactDev,
+          adapter: 'gemini',
+          name: 'ReactDev', // Name is optional, defaults to task id, can specify a more semantic name
+          cwd: './frontend',
           executionMode: 'interactive', // Keeps running for user input
           prompt: 'Implement a login form in React.',
           // Extra args passed to the CLI (e.g., "--model gpt-4")
@@ -69,7 +72,9 @@ const workflow = {
         },
         {
           id: 'dev-vue', // Runs at the same time as dev-react
-          adapter: vueAdapter,
+          adapter: 'gemini',
+          name: 'VueDev',
+          cwd: './frontend',
           executionMode: 'interactive',
           prompt: 'Implement a login form in Vue.'
         }
@@ -81,7 +86,9 @@ const workflow = {
       tasks: [
         {
           id: 'code-review',
-          adapter: techLead,
+          adapter: 'gemini',
+          name: 'TechLead',
+          cwd: './',
           executionMode: 'headless', // Automated mode
           prompt: 'Review the code generated in the previous step.'
         }
@@ -106,6 +113,15 @@ Create a new folder in `src/adapters/<your-cli-name>/`.
 You typically need two files:
 1.  `config.json`: Defines launch arguments and output parsing patterns.
 2.  `index.ts`: The adapter class inheriting from `BaseCLIAdapter`.
+
+#### Registration
+Register the adapter type once so workflows can reference it by name:
+
+```typescript
+import { adapterRegistry } from './src';
+
+adapterRegistry.register('my-new-cli', MyNewAdapter);
+```
 
 #### The "Headless" Mode Definition
 When configuring your adapter, pay attention to the **Headless** mode definition.
@@ -176,21 +192,22 @@ pnpm install
 
 Vibeteam 的工作流由 **Adapters** (角色) 和 **Stages** (阶段) 组成。
 
-#### 1. 定义 Adapters (团队成员)
-Adapter 代表了你想要使用的具体 CLI 工具或“Agent”。
+#### 1. 选择 Adapter 类型 (团队成员)
+Adapter 类型用来标识要启动的 CLI 工具。通过主入口导入时，内置类型（如 `gemini`）会自动注册。
 
 ```typescript
-import { GeminiAdapter } from './src';
+import { adapterRegistry } from './src';
 
-// 定义具有特定工作目录或配置的 Agent
-const reactDev = new GeminiAdapter({ name: 'ReactDev', cwd: './frontend' });
-const techLead = new GeminiAdapter({ name: 'TechLead', cwd: './' });
+// 内置 adapter（如 `gemini`）已自动注册。
+// 新增 adapter 后需要手动注册：
+// adapterRegistry.register('my-cli', MyCliAdapter);
 ```
 
 #### 2. 定义 Workflow (执行计划)
 工作流按 **Stages (阶段)** 组织。
 *   **串行阶段**：阶段之间按顺序执行。只有当阶段 1 的所有任务完成后，阶段 2 才会开始。
 *   **并行任务**：同一个阶段内的所有 `tasks` 会**同时 (Parallel)** 运行。
+*   **任务 Adapter 配置**：每个任务可设置 `name`、`cwd`、`env`，其中 `name` 默认等于任务 id。
 
 ```typescript
 const workflow = {
@@ -203,7 +220,9 @@ const workflow = {
       tasks: [
         {
           id: 'dev-react',
-          adapter: reactDev,
+          adapter: 'gemini',
+          name: 'ReactDev', // name为可选字段，默认等于任务 id，可以指定一个更具语义化的名称
+          cwd: './frontend',
           executionMode: 'interactive', // 交互模式：保持运行等待用户反馈
           prompt: 'Implement a login form in React.',
           // 传递给 CLI 的额外参数 (例如指定模型或开启详细日志)
@@ -211,7 +230,9 @@ const workflow = {
         },
         {
           id: 'dev-vue', // 与 dev-react 同时运行
-          adapter: vueAdapter,
+          adapter: 'gemini',
+          name: 'VueDev',
+          cwd: './frontend',
           executionMode: 'interactive',
           prompt: 'Implement a login form in Vue.'
         }
@@ -223,7 +244,9 @@ const workflow = {
       tasks: [
         {
           id: 'code-review',
-          adapter: techLead,
+          adapter: 'gemini',
+          name: 'TechLead',
+          cwd: './',
           executionMode: 'headless', // 自动模式
           prompt: 'Review the code generated in the previous step.'
         }
@@ -248,6 +271,15 @@ const workflow = {
 通常包含两个文件：
 1.  `config.json`: 定义启动参数和输出解析正则。
 2.  `index.ts`: 继承自 `BaseCLIAdapter` 的适配器类。
+
+#### 注册
+需要注册 adapter 类型，才能在 workflow 中按名称引用：
+
+```typescript
+import { adapterRegistry } from './src';
+
+adapterRegistry.register('my-new-cli', MyNewAdapter);
+```
 
 #### 关于 "Headless" 模式的定义
 在配置 Adapter 时，请特别注意 **Headless** 模式的定义。

@@ -1,7 +1,6 @@
 import * as path from 'path';
 
 import { Orchestrator, WorkflowDefinition } from '../src/index';
-import { GeminiAdapter } from '../src/index';
 import {
   assertFilesExist,
   assertLogsHealthy,
@@ -40,7 +39,8 @@ const buildWorkflow = (): WorkflowDefinition => ({
       tasks: [
         {
           id: 'doc-core',
-          adapter: new GeminiAdapter({ name: 'Core Analyst' }),
+          adapter: 'gemini',
+          name: 'Core Analyst',
           executionMode: 'headless',
           prompt: `
 You are a technical writer analyzing the core runtime module.
@@ -72,7 +72,8 @@ Constraints:
         },
         {
           id: 'doc-adapters',
-          adapter: new GeminiAdapter({ name: 'Adapter Analyst' }),
+          adapter: 'gemini',
+          name: 'Adapter Analyst',
           executionMode: 'headless',
           prompt: `
 You are a technical writer analyzing the adapter layer.
@@ -103,7 +104,8 @@ Constraints:
         },
         {
           id: 'doc-orchestrator',
-          adapter: new GeminiAdapter({ name: 'Orchestrator Analyst' }),
+          adapter: 'gemini',
+          name: 'Orchestrator Analyst',
           executionMode: 'headless',
           prompt: `
 You are a technical writer analyzing the orchestrator layer.
@@ -136,7 +138,8 @@ Constraints:
         },
         {
           id: 'doc-tooling',
-          adapter: new GeminiAdapter({ name: 'Tooling Analyst' }),
+          adapter: 'gemini',
+          name: 'Tooling Analyst',
           executionMode: 'headless',
           prompt: `
 You are a technical writer analyzing project structure and tooling.
@@ -175,7 +178,8 @@ Constraints:
       tasks: [
         {
           id: 'doc-synthesis',
-          adapter: new GeminiAdapter({ name: 'Lead Documentation Architect' }),
+          adapter: 'gemini',
+          name: 'Lead Documentation Architect',
           executionMode: 'headless',
           prompt: `
 You are a lead documentation architect. Synthesize module documentation into a comprehensive guide.

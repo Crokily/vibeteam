@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 
-import { IAgentAdapter } from '../adapters/IAgentAdapter';
+import { AdapterType } from '../adapters/registry';
 import { AgentState } from './state/AgentState';
 import { SessionManager } from './state/SessionManager';
 import { WorkflowExecutor } from './engine/WorkflowExecutor';
@@ -29,7 +29,14 @@ export type {
 export class Orchestrator extends EventEmitter {
   private readonly runnerFactory?: RunnerFactory;
 
-  private defaultAdapter: IAgentAdapter | null = null;
+  private defaultAdapter:
+    | {
+        type: AdapterType;
+        cwd?: string;
+        env?: NodeJS.ProcessEnv;
+        name?: string;
+      }
+    | null = null;
   private sessionManager: SessionManager | null = null;
   private executor: WorkflowExecutor | null = null;
   private state: AgentState = AgentState.IDLE;
@@ -48,12 +55,20 @@ export class Orchestrator extends EventEmitter {
     return this.sessionManager?.getSession() ?? null;
   }
 
-  connect(adapter: IAgentAdapter): void {
+  connect(
+    adapterType: AdapterType,
+    options: { cwd?: string; env?: NodeJS.ProcessEnv; name?: string } = {},
+  ): void {
     if (this.defaultAdapter) {
       throw new Error('Orchestrator is already connected.');
     }
 
-    this.defaultAdapter = adapter;
+    this.defaultAdapter = {
+      type: adapterType,
+      cwd: options.cwd,
+      env: options.env,
+      name: options.name,
+    };
   }
 
   disconnect(): void {
@@ -106,7 +121,16 @@ export class Orchestrator extends EventEmitter {
           tasks: [
             {
               id: 'task-0',
-              adapter: this.defaultAdapter,
+              adapter: this.defaultAdapter.type,
+              ...(this.defaultAdapter.cwd
+                ? { cwd: this.defaultAdapter.cwd }
+                : {}),
+              ...(this.defaultAdapter.env
+                ? { env: this.defaultAdapter.env }
+                : {}),
+              ...(this.defaultAdapter.name
+                ? { name: this.defaultAdapter.name }
+                : {}),
               prompt: goal,
             },
           ],

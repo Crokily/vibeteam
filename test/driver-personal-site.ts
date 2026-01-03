@@ -1,7 +1,6 @@
 import * as path from 'path';
 
 import { Orchestrator, WorkflowDefinition } from '../src/index';
-import { GeminiAdapter } from '../src/index';
 import {
   assertFilesExist,
   assertLogsHealthy,
@@ -46,7 +45,8 @@ const buildWorkflow = (): WorkflowDefinition => ({
       tasks: [
         {
           id: 'architect-agent',
-          adapter: new GeminiAdapter({ name: 'Architect' }),
+          adapter: 'gemini',
+          name: 'Architect',
           executionMode: 'headless',
           prompt: `
 你是一名高级网站架构师。
@@ -69,7 +69,8 @@ const buildWorkflow = (): WorkflowDefinition => ({
       tasks: [
         {
           id: 'dev-home',
-          adapter: new GeminiAdapter({ name: 'Home Page Developer' }),
+          adapter: 'gemini',
+          name: 'Home Page Developer',
           executionMode: 'headless',
           prompt: `
 你是一名初级前端工程师。
@@ -87,7 +88,8 @@ const buildWorkflow = (): WorkflowDefinition => ({
         },
         {
           id: 'dev-projects',
-          adapter: new GeminiAdapter({ name: 'Projects Page Developer' }),
+          adapter: 'gemini',
+          name: 'Projects Page Developer',
           executionMode: 'headless',
           prompt: `
 你是一名初级前端工程师。
@@ -110,7 +112,8 @@ const buildWorkflow = (): WorkflowDefinition => ({
       tasks: [
         {
           id: 'qa-agent',
-          adapter: new GeminiAdapter({ name: 'QA Reviewer' }),
+          adapter: 'gemini',
+          name: 'QA Reviewer',
           executionMode: 'headless',
           prompt: `
 你是一名 QA 测试工程师。

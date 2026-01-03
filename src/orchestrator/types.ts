@@ -1,16 +1,21 @@
 import { AgentLaunchConfig, ExecutionMode, IAgentAdapter } from '../adapters/IAgentAdapter';
+import { AdapterType } from '../adapters/registry';
 import { AgentEvent } from '../core/AgentEvent';
 import { AgentState } from './state/AgentState';
 import { TaskStatus, WorkflowSession } from './state/WorkflowSession';
 
 export type { ExecutionMode } from '../adapters/IAgentAdapter';
+export type { AdapterType } from '../adapters/registry';
 
 export type WorkflowTask = {
   id: string;
-  adapter: IAgentAdapter;
+  adapter: AdapterType;
   executionMode?: ExecutionMode;
   prompt?: string;
   extraArgs?: string[];
+  cwd?: string;
+  env?: NodeJS.ProcessEnv;
+  name?: string;
 };
 
 export type WorkflowStage = {

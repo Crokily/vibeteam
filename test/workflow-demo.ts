@@ -3,7 +3,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
 import {
-  GeminiAdapter,
   WorkflowDefinition,
   WorkflowExecutor,
   SessionManager
@@ -18,24 +17,7 @@ const EXTRA_ARGS = EXTRA_ARGS_RAW
   ? EXTRA_ARGS_RAW.split(/\s+/).filter(Boolean)
   : undefined;
 
-// 2. 创建适配器实例
-// 我们需要三个实例，因为每个任务都有独立的状态
-const reactAdapter = new GeminiAdapter({
-  name: 'ReactDev',
-  cwd: MANUAL_DIR
-});
-
-const vueAdapter = new GeminiAdapter({
-  name: 'VueDev',
-  cwd: MANUAL_DIR
-});
-
-const bossAdapter = new GeminiAdapter({
-  name: 'TechLead',
-  cwd: MANUAL_DIR
-});
-
-// 3. 定义工作流
+// 2. 定义工作流
 const workflow: WorkflowDefinition = {
   id: 'framework-comparison-workflow',
   goal: 'Compare React and Vue and make a decision',
@@ -45,14 +27,18 @@ const workflow: WorkflowDefinition = {
       tasks: [
         {
           id: 'task-react',
-          adapter: reactAdapter,
+          adapter: 'gemini',
+          name: 'ReactDev',
+          cwd: MANUAL_DIR,
           executionMode: 'interactive', // 交互模式
           prompt: '请创建一个名为 react_pros.md 的文件，列出 React 的 3 个主要优点。完成后请告诉我。',
           extraArgs: EXTRA_ARGS
         },
         {
           id: 'task-vue',
-          adapter: vueAdapter,
+          adapter: 'gemini',
+          name: 'VueDev',
+          cwd: MANUAL_DIR,
           executionMode: 'interactive', // 交互模式 (并行运行)
           prompt: '请创建一个名为 vue_pros.md 的文件，列出 Vue 的 3 个主要优点。完成后请告诉我。',
           extraArgs: EXTRA_ARGS
@@ -64,7 +50,9 @@ const workflow: WorkflowDefinition = {
       tasks: [
         {
           id: 'task-decision',
-          adapter: bossAdapter,
+          adapter: 'gemini',
+          name: 'TechLead',
+          cwd: MANUAL_DIR,
           executionMode: 'headless', // 无头模式 (自动运行)
           prompt: '读取当前目录下的 react_pros.md 和 vue_pros.md。假设你是一位有10年经验的架构师，分析这两个文件，选择一个适合开发大型后台管理系统的框架，并将你的决定和理由写入 decision.md。',
           extraArgs: EXTRA_ARGS
@@ -74,7 +62,7 @@ const workflow: WorkflowDefinition = {
   ]
 };
 
-// 4. 初始化引擎
+// 3. 初始化引擎
 const sessionManager = SessionManager.create(workflow.goal || 'Demo Workflow');
 const executor = new WorkflowExecutor(sessionManager);
 
@@ -110,7 +98,7 @@ process.on('SIGINT', () => {
   process.exit(130);
 });
 
-// 5. 设置 CLI 交互 (支持并发路由)
+// 4. 设置 CLI 交互 (支持并发路由)
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
@@ -261,7 +249,7 @@ rl.on('line', (line) => {
     }
   }
 });
-// 6. 启动工作流
+// 5. 启动工作流
 async function main() {
   console.log('Starting Workflow...');
   console.log(`Working Directory: ${MANUAL_DIR}`);

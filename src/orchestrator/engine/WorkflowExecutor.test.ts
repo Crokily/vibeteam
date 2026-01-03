@@ -1,11 +1,18 @@
 import { EventEmitter } from 'events';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { ExecutionMode, IAgentAdapter } from '../../adapters/IAgentAdapter';
+import { adapterRegistry } from '../../adapters/registry';
 import { AgentState } from '../state/AgentState';
 import { SessionManager } from '../state/SessionManager';
 import { WorkflowExecutor } from './WorkflowExecutor';
 import { RunnerFactory, WorkflowDefinition } from '../types';
+
+type MockAdapterOptions = {
+  name?: string;
+};
+
+let lastAdapter: MockAdapter | null = null;
 
 class MockAdapter extends EventEmitter implements IAgentAdapter {
   readonly name: string;
@@ -13,9 +20,10 @@ class MockAdapter extends EventEmitter implements IAgentAdapter {
   lastLaunchPrompt?: string;
   lastLaunchExtraArgs?: string[];
 
-  constructor(name: string) {
+  constructor(options: MockAdapterOptions = {}) {
     super();
-    this.name = name;
+    this.name = options.name ?? 'mock';
+    lastAdapter = this;
   }
 
   getLaunchConfig(
@@ -75,7 +83,7 @@ const createExecutor = (runnerFactory: RunnerFactory) => {
 };
 
 const createWorkflow = (
-  adapter: IAgentAdapter,
+  adapterType: string,
   prompt?: string,
   executionMode?: ExecutionMode,
 ): WorkflowDefinition => ({
@@ -86,7 +94,7 @@ const createWorkflow = (
       tasks: [
         {
           id: 'task-0',
-          adapter,
+          adapter: adapterType,
           ...(prompt ? { prompt } : {}),
           ...(executionMode ? { executionMode } : {}),
         },
@@ -96,19 +104,30 @@ const createWorkflow = (
 });
 
 describe('WorkflowExecutor', () => {
+  beforeAll(() => {
+    adapterRegistry.register('mock', MockAdapter);
+  });
+
+  beforeEach(() => {
+    lastAdapter = null;
+  });
+
   it('passes prompt via getLaunchConfig (not stdin)', async () => {
-    const adapter = new MockAdapter('interaction');
     const runner = new FakeRunner();
     const executor = createExecutor(() => runner);
 
     const runPromise = executor.executeWorkflow(
-      createWorkflow(adapter, 'Build snake game', 'interactive'),
+      createWorkflow('mock', 'Build snake game', 'interactive'),
     );
     await nextTick();
 
+    if (!lastAdapter) {
+      throw new Error('Expected adapter instance to be created.');
+    }
+
     // Prompt is passed to adapter.getLaunchConfig, not sent via stdin
-    expect(adapter.lastLaunchMode).toBe('interactive');
-    expect(adapter.lastLaunchPrompt).toBe('Build snake game');
+    expect(lastAdapter.lastLaunchMode).toBe('interactive');
+    expect(lastAdapter.lastLaunchPrompt).toBe('Build snake game');
     expect(runner.sent).toEqual([]); // No stdin writes for initial prompt
 
     runner.emitExit();
@@ -116,14 +135,17 @@ describe('WorkflowExecutor', () => {
   });
 
   it('validates submitInteraction when not waiting', async () => {
-    const adapter = new MockAdapter('interaction');
     const runner = new FakeRunner();
     const executor = createExecutor(() => runner);
 
     const runPromise = executor.executeWorkflow(
-      createWorkflow(adapter, 'Check interaction', 'interactive'),
+      createWorkflow('mock', 'Check interaction', 'interactive'),
     );
     await nextTick();
+
+    if (!lastAdapter) {
+      throw new Error('Expected adapter instance to be created.');
+    }
 
     expect(() => executor.submitInteraction('task-0', 'yes')).toThrow(
       'not waiting',
@@ -134,7 +156,7 @@ describe('WorkflowExecutor', () => {
       raw: 'Ready for your command',
       clean: 'Ready for your command',
     });
-    adapter.emit('stateChange', { to: { name: 'interaction_idle' } });
+    lastAdapter.emit('stateChange', { to: { name: 'interaction_idle' } });
 
     expect(executor.getSession().taskStatus['task-0']).toBe('WAITING_FOR_USER');
 
@@ -146,12 +168,11 @@ describe('WorkflowExecutor', () => {
   });
 
   it('allows manual completion for interactive tasks', async () => {
-    const adapter = new MockAdapter('manual');
     const runner = new FakeRunner();
     const executor = createExecutor(() => runner);
 
     const runPromise = executor.executeWorkflow(
-      createWorkflow(adapter, 'Manual completion', 'interactive'),
+      createWorkflow('mock', 'Manual completion', 'interactive'),
     );
     await nextTick();
 
@@ -163,12 +184,11 @@ describe('WorkflowExecutor', () => {
   });
 
   it('throws when manually completing non-active tasks', async () => {
-    const adapter = new MockAdapter('manual');
     const runner = new FakeRunner();
     const executor = createExecutor(() => runner);
 
     const runPromise = executor.executeWorkflow(
-      createWorkflow(adapter, 'Manual completion', 'interactive'),
+      createWorkflow('mock', 'Manual completion', 'interactive'),
     );
     await nextTick();
 
@@ -181,12 +201,11 @@ describe('WorkflowExecutor', () => {
   });
 
   it('records prompts for headless tasks', async () => {
-    const adapter = new MockAdapter('headless');
     const runner = new FakeRunner();
     const executor = createExecutor(() => runner);
 
     const runPromise = executor.executeWorkflow(
-      createWorkflow(adapter, 'Headless prompt', 'headless'),
+      createWorkflow('mock', 'Headless prompt', 'headless'),
     );
     await nextTick();
 
@@ -202,14 +221,13 @@ describe('WorkflowExecutor', () => {
   });
 
   it('executes stages sequentially', async () => {
-    const adapter = new MockAdapter('sequential');
     const executor = createExecutor(() => new DelayedRunner(10));
 
     const workflow: WorkflowDefinition = {
       id: 'seq-flow',
       stages: [
-        { id: 's1', tasks: [{ id: 't1', adapter }] },
-        { id: 's2', tasks: [{ id: 't2', adapter }] },
+        { id: 's1', tasks: [{ id: 't1', adapter: 'mock' }] },
+        { id: 's2', tasks: [{ id: 't2', adapter: 'mock' }] },
       ],
     };
 

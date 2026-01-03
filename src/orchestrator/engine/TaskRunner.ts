@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 
 import { ExecutionMode } from '../../adapters/IAgentAdapter';
+import { adapterRegistry } from '../../adapters/registry';
 import { SessionManager } from '../state/SessionManager';
 import { TaskStatus } from '../state/WorkflowSession';
 import {
@@ -52,27 +53,34 @@ export class TaskRunner extends EventEmitter {
 
     const executionMode = task.executionMode ?? DEFAULT_EXECUTION_MODE;
     const prompt = task.prompt?.trim();
+    const adapterName =
+      task.name && task.name.trim().length > 0 ? task.name : task.id;
+    const adapter = adapterRegistry.create(task.adapter, {
+      cwd: task.cwd,
+      env: task.env,
+      name: adapterName,
+    });
     const launchConfig = resolveLaunchConfig(
-      task.adapter,
+      adapter,
       executionMode,
       prompt,
       task.extraArgs,
     );
     const runner = createRunner(
       this.runnerFactory,
-      task.adapter,
+      adapter,
       task.id,
       launchConfig,
       executionMode,
       prompt,
     );
-    const adapterEmitter = asEmitter(task.adapter);
+    const adapterEmitter = asEmitter(adapter);
     const handlerDeps = this.getHandlerDeps();
 
     return new Promise((resolve, reject) => {
       const context: RunnerContext = {
         runner,
-        adapter: task.adapter,
+        adapter,
         adapterEmitter,
         taskId: task.id,
         stageIndex,

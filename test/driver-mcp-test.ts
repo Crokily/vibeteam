@@ -1,7 +1,6 @@
 import * as path from 'path';
 
 import { Orchestrator, WorkflowDefinition } from '../src/index';
-import { GeminiAdapter } from '../src/index';
 import {
   assertFilesExist,
   assertLogsHealthy,
@@ -32,7 +31,8 @@ const buildWorkflow = (): WorkflowDefinition => ({
       tasks: [
         {
           id: 'search-tauri',
-          adapter: new GeminiAdapter({ name: 'Tauri Researcher' }),
+          adapter: 'gemini',
+          name: 'Tauri Researcher',
           executionMode: 'headless',
           prompt: `
 你是一名技术调研员。
@@ -45,7 +45,8 @@ const buildWorkflow = (): WorkflowDefinition => ({
         },
         {
           id: 'search-electron',
-          adapter: new GeminiAdapter({ name: 'Electron Researcher' }),
+          adapter: 'gemini',
+          name: 'Electron Researcher',
           executionMode: 'headless',
           prompt: `
 你是一名技术调研员。
@@ -62,9 +63,8 @@ const buildWorkflow = (): WorkflowDefinition => ({
       tasks: [
         {
           id: 'final-recommender',
-          adapter: new GeminiAdapter({
-            name: 'Chief Architect',
-          }),
+          adapter: 'gemini',
+          name: 'Chief Architect',
           executionMode: 'headless',
           prompt: `
 你是一名首席架构师。

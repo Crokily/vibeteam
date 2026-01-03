@@ -1,3 +1,4 @@
+import { adapterRegistry } from '../../adapters/registry';
 import { WorkflowDefinition } from '../types';
 
 export const validateWorkflow = (workflow: WorkflowDefinition): void => {
@@ -16,6 +17,16 @@ export const validateWorkflow = (workflow: WorkflowDefinition): void => {
       if (!task.id || !task.id.trim()) {
         throw new Error('Workflow task is missing an id.');
       }
+      if (!task.adapter || typeof task.adapter !== 'string' || !task.adapter.trim()) {
+        throw new Error(
+          `Workflow task "${task.id}" adapter must be a non-empty string.`,
+        );
+      }
+      if (!adapterRegistry.has(task.adapter)) {
+        throw new Error(
+          `Workflow task "${task.id}" adapter type "${task.adapter}" is not registered.`,
+        );
+      }
       if (
         task.executionMode !== undefined &&
         task.executionMode !== 'interactive' &&
@@ -29,6 +40,18 @@ export const validateWorkflow = (workflow: WorkflowDefinition): void => {
         throw new Error(
           `Workflow task "${task.id}" prompt must be a string.`,
         );
+      }
+      if (task.name !== undefined && typeof task.name !== 'string') {
+        throw new Error(`Workflow task "${task.id}" name must be a string.`);
+      }
+      if (task.cwd !== undefined && typeof task.cwd !== 'string') {
+        throw new Error(`Workflow task "${task.id}" cwd must be a string.`);
+      }
+      if (
+        task.env !== undefined &&
+        (typeof task.env !== 'object' || task.env === null || Array.isArray(task.env))
+      ) {
+        throw new Error(`Workflow task "${task.id}" env must be an object.`);
       }
       if (
         task.executionMode === 'headless' &&

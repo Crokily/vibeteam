@@ -27,7 +27,7 @@ const MOCK_SCRIPT = [
 export class MockAdapter extends EventEmitter implements IAgentAdapter {
   readonly name = 'mock';
 
-  constructor() {
+  constructor(_options: Record<string, unknown> = {}) {
     super();
   }
 
