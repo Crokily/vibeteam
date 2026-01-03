@@ -145,6 +145,41 @@ describe('WorkflowExecutor', () => {
     await runPromise;
   });
 
+  it('allows manual completion for interactive tasks', async () => {
+    const adapter = new MockAdapter('manual');
+    const runner = new FakeRunner();
+    const executor = createExecutor(() => runner);
+
+    const runPromise = executor.executeWorkflow(
+      createWorkflow(adapter, 'Manual completion', 'interactive'),
+    );
+    await nextTick();
+
+    executor.completeTask('task-0');
+    await runPromise;
+
+    expect(runner.stopped).toBe(true);
+    expect(executor.getSession().taskStatus['task-0']).toBe('DONE');
+  });
+
+  it('throws when manually completing non-active tasks', async () => {
+    const adapter = new MockAdapter('manual');
+    const runner = new FakeRunner();
+    const executor = createExecutor(() => runner);
+
+    const runPromise = executor.executeWorkflow(
+      createWorkflow(adapter, 'Manual completion', 'interactive'),
+    );
+    await nextTick();
+
+    expect(() => executor.completeTask('missing-task')).toThrow('not active');
+
+    runner.emitExit();
+    await runPromise;
+
+    expect(() => executor.completeTask('task-0')).toThrow('not active');
+  });
+
   it('records prompts for headless tasks', async () => {
     const adapter = new MockAdapter('headless');
     const runner = new FakeRunner();

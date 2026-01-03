@@ -80,6 +80,10 @@ export class WorkflowExecutor extends EventEmitter {
     this.taskRunner.submitInteraction(taskId, input);
   }
 
+  completeTask(taskId: string): void {
+    this.taskRunner.completeTask(taskId);
+  }
+
   stopAll(): void {
     this.taskRunner.stopAll();
     this.recalculateState();

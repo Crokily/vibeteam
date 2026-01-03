@@ -123,6 +123,21 @@ export class TaskRunner extends EventEmitter {
     this.updateTaskStatus(taskId, 'RUNNING');
   }
 
+  completeTask(taskId: string): void {
+    const context = this.activeRunners.get(taskId);
+    if (!context) {
+      throw new Error(`Task "${taskId}" is not active.`);
+    }
+
+    if (context.executionMode !== 'interactive') {
+      throw new Error(`Task "${taskId}" is not interactive.`);
+    }
+
+    cleanupRunner(this.getHandlerDeps(), taskId);
+    this.updateTaskStatus(taskId, 'DONE');
+    context.resolve();
+  }
+
   stopAll(): void {
     this.stopAllRunners();
   }

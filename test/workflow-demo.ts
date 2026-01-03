@@ -6,12 +6,17 @@ import {
   GeminiAdapter,
   WorkflowDefinition,
   WorkflowExecutor,
-  SessionManager,
-  AnsiUtils
+  SessionManager
 } from '../src';
 
 // 1. 设置工作目录
 const MANUAL_DIR = path.resolve(__dirname, 'manual');
+
+// 额外 CLI 参数（将插入到模式参数与 prompt 之间）
+const EXTRA_ARGS_RAW = process.env.GEMINI_EXTRA_ARGS?.trim();
+const EXTRA_ARGS = EXTRA_ARGS_RAW
+  ? EXTRA_ARGS_RAW.split(/\s+/).filter(Boolean)
+  : undefined;
 
 // 2. 创建适配器实例
 // 我们需要三个实例，因为每个任务都有独立的状态
@@ -42,13 +47,15 @@ const workflow: WorkflowDefinition = {
           id: 'task-react',
           adapter: reactAdapter,
           executionMode: 'interactive', // 交互模式
-          prompt: '请创建一个名为 react_pros.md 的文件，列出 React 的 3 个主要优点。完成后请告诉我。'
+          prompt: '请创建一个名为 react_pros.md 的文件，列出 React 的 3 个主要优点。完成后请告诉我。',
+          extraArgs: EXTRA_ARGS
         },
         {
           id: 'task-vue',
           adapter: vueAdapter,
           executionMode: 'interactive', // 交互模式 (并行运行)
-          prompt: '请创建一个名为 vue_pros.md 的文件，列出 Vue 的 3 个主要优点。完成后请告诉我。'
+          prompt: '请创建一个名为 vue_pros.md 的文件，列出 Vue 的 3 个主要优点。完成后请告诉我。',
+          extraArgs: EXTRA_ARGS
         }
       ]
     },
@@ -59,7 +66,8 @@ const workflow: WorkflowDefinition = {
           id: 'task-decision',
           adapter: bossAdapter,
           executionMode: 'headless', // 无头模式 (自动运行)
-          prompt: '读取当前目录下的 react_pros.md 和 vue_pros.md。假设你是一位有10年经验的架构师，分析这两个文件，选择一个适合开发大型后台管理系统的框架，并将你的决定和理由写入 decision.md。'
+          prompt: '读取当前目录下的 react_pros.md 和 vue_pros.md。假设你是一位有10年经验的架构师，分析这两个文件，选择一个适合开发大型后台管理系统的框架，并将你的决定和理由写入 decision.md。',
+          extraArgs: EXTRA_ARGS
         }
       ]
     }
@@ -112,12 +120,16 @@ const rl = readline.createInterface({
 // 记录哪些任务正在等待输入
 const pendingInteractions = new Set<string>();
 
+const isManualCompleteCommand = (message: string): boolean =>
+  ['/done', '/complete'].includes(message.trim());
+
 const printStatus = () => {
   if (pendingInteractions.size > 0) {
     console.log('\n--- Waiting for input ---');
     pendingInteractions.forEach(id => {
       console.log(`* To reply to ${id}, type: @${id} <message>`);
     });
+    console.log('* To manually complete a task, type: @task-id /done');
     console.log('-------------------------\n');
   }
 };
@@ -200,15 +212,28 @@ rl.on('line', (line) => {
     const fullTaskId = Array.from(pendingInteractions).find(id => id.includes(targetTaskId));
 
     if (fullTaskId) {
-      console.log(`>>> Sending to ${fullTaskId}: "${message}"`);
-      try {
-        executor.submitInteraction(fullTaskId, message);
-        writeLog(fullTaskId, `[${new Date().toISOString()}] INPUT: ${message}`);
-        // 从等待列表中移除，防止重复发送
-        pendingInteractions.delete(fullTaskId);
-      } catch (e) {
-        console.error(`Failed to send: ${e.message}`);
-        writeLog(fullTaskId, `[${new Date().toISOString()}] SEND_FAILED: ${String(e)}`);
+      const trimmedMessage = message.trim();
+      if (isManualCompleteCommand(trimmedMessage)) {
+        console.log(`>>> Completing ${fullTaskId}`);
+        try {
+          executor.completeTask(fullTaskId);
+          writeLog(fullTaskId, `[${new Date().toISOString()}] MANUAL_COMPLETE`);
+          pendingInteractions.delete(fullTaskId);
+        } catch (e) {
+          console.error(`Failed to complete: ${e.message}`);
+          writeLog(fullTaskId, `[${new Date().toISOString()}] COMPLETE_FAILED: ${String(e)}`);
+        }
+      } else {
+        console.log(`>>> Sending to ${fullTaskId}: "${message}"`);
+        try {
+          executor.submitInteraction(fullTaskId, message);
+          writeLog(fullTaskId, `[${new Date().toISOString()}] INPUT: ${message}`);
+          // 从等待列表中移除，防止重复发送
+          pendingInteractions.delete(fullTaskId);
+        } catch (e) {
+          console.error(`Failed to send: ${e.message}`);
+          writeLog(fullTaskId, `[${new Date().toISOString()}] SEND_FAILED: ${String(e)}`);
+        }
       }
     } else {
       console.log(`Error: No active task found matching "${targetTaskId}". Waiting tasks: ${Array.from(pendingInteractions).join(', ')}`);
@@ -217,10 +242,17 @@ rl.on('line', (line) => {
     // 如果用户没加 @，且只有一个任务在等，就默认发给那个任务
     if (pendingInteractions.size === 1) {
       const taskId = pendingInteractions.values().next().value;
-      console.log(`>>> (Implicit) Sending to ${taskId}: "${trimmed}"`);
-      executor.submitInteraction(taskId, trimmed);
-      writeLog(taskId, `[${new Date().toISOString()}] INPUT: ${trimmed}`);
-      pendingInteractions.delete(taskId);
+      if (isManualCompleteCommand(trimmed)) {
+        console.log(`>>> (Implicit) Completing ${taskId}`);
+        executor.completeTask(taskId);
+        writeLog(taskId, `[${new Date().toISOString()}] MANUAL_COMPLETE`);
+        pendingInteractions.delete(taskId);
+      } else {
+        console.log(`>>> (Implicit) Sending to ${taskId}: "${trimmed}"`);
+        executor.submitInteraction(taskId, trimmed);
+        writeLog(taskId, `[${new Date().toISOString()}] INPUT: ${trimmed}`);
+        pendingInteractions.delete(taskId);
+      }
     } else if (pendingInteractions.size > 1) {
       console.log('Error: Multiple tasks waiting. Please specify target with @task-id <msg>');
       printStatus();

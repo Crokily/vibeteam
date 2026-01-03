@@ -128,6 +128,14 @@ export class Orchestrator extends EventEmitter {
     this.executor.submitInteraction(taskId, input);
   }
 
+  completeTask(taskId: string): void {
+    if (!this.executor) {
+      throw new Error('No active session.');
+    }
+
+    this.executor.completeTask(taskId);
+  }
+
   private attachExecutorEvents(executor: WorkflowExecutor): void {
     executor.on('stateChange', (payload: OrchestratorStateChange) => {
       this.state = payload.to;
