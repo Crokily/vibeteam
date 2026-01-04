@@ -1,0 +1,6 @@
+{
+  "npmRebuild": true,
+  "nodeGypRebuild": false,
+  "buildDependenciesFromSource": false,
+  "nativeRebuilder": "sequential"
+}

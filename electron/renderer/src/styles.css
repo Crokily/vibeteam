@@ -1,0 +1,95 @@
+@font-face {
+  font-family: 'Alegreya';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./assets/fonts/Alegreya-Variable.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 300 600;
+  font-display: swap;
+  src: url('./assets/fonts/IBMPlexSans-Variable.woff2') format('woff2');
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-ink: 10 15 20;
+    --color-slate: 17 24 34;
+    --color-graphite: 20 28 39;
+    --color-ash: 148 163 184;
+    --color-iron: 226 232 240;
+    --color-accent: 249 115 22;
+    --color-accent-soft: 251 146 60;
+    --color-border: 148 163 184;
+    --font-display: 'Alegreya', serif;
+    --font-body: 'IBM Plex Sans', sans-serif;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-body);
+    background-color: rgb(var(--color-ink));
+    color: rgb(var(--color-iron));
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: linear-gradient(
+        transparent 31px,
+        rgba(226, 232, 240, 0.04) 32px
+      ),
+      linear-gradient(90deg, transparent 31px, rgba(226, 232, 240, 0.04) 32px);
+    background-size: 32px 32px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #root {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+@layer utilities {
+  @keyframes reveal {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .reveal {
+    animation: reveal 0.6s ease-out both;
+  }
+
+  .reveal-delay-1 {
+    animation-delay: 0.08s;
+  }
+
+  .reveal-delay-2 {
+    animation-delay: 0.16s;
+  }
+
+  .reveal-delay-3 {
+    animation-delay: 0.24s;
+  }
+}

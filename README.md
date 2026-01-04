@@ -30,6 +30,10 @@ cd vibeteam
 pnpm install
 ```
 
+### Development Setup Note (Electron)
+
+This project uses `node-linker=hoisted` in `.npmrc` to ensure Electron can resolve native modules (like `node-pty`). Do not remove this setting.
+
 ### Usage Guide: Creating a Workflow
 
 A workflow in Vibeteam consists of **Adapters** (Roles) and **Stages** (Process).
@@ -187,6 +191,10 @@ git clone https://github.com/your-username/vibeteam.git
 cd vibeteam
 pnpm install
 ```
+
+### 开发环境说明 (Electron)
+
+项目在 `.npmrc` 中使用 `node-linker=hoisted`，用于确保 Electron 能正确解析原生模块（如 `node-pty`）。请勿移除此配置。
 
 ### 使用指南：创建工作流
 
