@@ -1,11 +1,9 @@
-import { BrowserWindow, ipcMain } from 'electron';
+import { ipcMain } from 'electron';
 import type {
   IpcCommandArgs,
   IpcCommandChannel,
-  IpcEventChannel,
-  IpcEventPayload,
 } from '../../shared/ipc-types';
-import { ipcCommandSchemas, ipcEventSchemas } from '../../shared/ipc-schemas';
+import { ipcCommandSchemas } from '../../shared/ipc-schemas';
 import { commandHandlers } from './handlers';
 
 let isRegistered = false;
@@ -36,13 +34,4 @@ export const registerIpcHandlers = (): void => {
   isRegistered = true;
 };
 
-export const sendIpcEvent = <E extends IpcEventChannel>(
-  channel: E,
-  payload: IpcEventPayload<E>
-): void => {
-  const parsedPayload = ipcEventSchemas[channel].parse(payload) as IpcEventPayload<E>;
-
-  BrowserWindow.getAllWindows().forEach((window) => {
-    window.webContents.send(channel, parsedPayload);
-  });
-};
+export { sendIpcEvent } from './events';
