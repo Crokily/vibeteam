@@ -1,6 +1,29 @@
 import type { AppConfig } from './config';
 
-export type WorkflowDefinition = Record<string, unknown>;
+export type ExecutionMode = 'interactive' | 'headless';
+export type AdapterType = string;
+
+export type WorkflowTask = {
+  id: string;
+  adapter: AdapterType;
+  executionMode?: ExecutionMode;
+  prompt?: string;
+  extraArgs?: string[];
+  cwd?: string;
+  env?: Record<string, string | undefined>;
+  name?: string;
+};
+
+export type WorkflowStage = {
+  id: string;
+  tasks: WorkflowTask[];
+};
+
+export type WorkflowDefinition = {
+  id: string;
+  goal?: string;
+  stages: WorkflowStage[];
+};
 
 export type OrchestratorState =
   | 'IDLE'

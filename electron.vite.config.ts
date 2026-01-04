@@ -2,6 +2,8 @@ import { defineConfig } from 'electron-vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 
+const nativeModules = ['node-pty'];
+
 export default defineConfig({
   main: {
     build: {
@@ -9,6 +11,7 @@ export default defineConfig({
         input: {
           index: resolve(__dirname, 'electron/main/index.ts'),
         },
+        external: nativeModules,
       },
     },
   },
@@ -18,6 +21,7 @@ export default defineConfig({
         input: {
           index: resolve(__dirname, 'electron/preload/index.ts'),
         },
+        external: nativeModules,
       },
     },
   },

@@ -1,11 +1,12 @@
 import { app, BrowserWindow } from 'electron';
 import { join } from 'path';
 import { registerIpcHandlers } from './ipc';
+import { initOrchestrator, shutdownOrchestrator } from './orchestrator';
 import { registerWindowStateHandlers, resolveWindowOptions } from './window-state';
 
 console.log('[Main] Starting Electron main process...');
 
-const createWindow = () => {
+const createWindow = (): BrowserWindow => {
   console.log('[Main] Creating window...');
   const { options, shouldMaximize } = resolveWindowOptions({
     width: 1200,
@@ -32,15 +33,22 @@ const createWindow = () => {
   });
 
   registerWindowStateHandlers(mainWindow);
+  initOrchestrator(mainWindow);
 
   const devServerUrl = process.env.ELECTRON_RENDERER_URL;
   console.log(`[Main] Loading URL: ${devServerUrl || 'local file'}`);
   
   if (devServerUrl) {
-    mainWindow.loadURL(devServerUrl).catch(e => console.error('[Main] Failed to load URL:', e));
+    mainWindow
+      .loadURL(devServerUrl)
+      .catch((e) => console.error('[Main] Failed to load URL:', e));
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html')).catch(e => console.error('[Main] Failed to load file:', e));
+    mainWindow
+      .loadFile(join(__dirname, '../renderer/index.html'))
+      .catch((e) => console.error('[Main] Failed to load file:', e));
   }
+
+  return mainWindow;
 };
 
 app.whenReady().then(() => {
@@ -62,8 +70,8 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   console.log('[Main] All windows closed');
+  shutdownOrchestrator();
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
-

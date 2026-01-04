@@ -5,23 +5,21 @@ import {
 import type { WorkflowDefinition } from '../../shared/ipc-types';
 import { appConfigValueSchemas } from '../../shared/ipc-schemas';
 import { getConfig, setConfig } from '../config-store';
+import { getOrchestrator } from '../orchestrator';
 
 export const commandHandlers = {
   'workflow:execute': async (workflow: WorkflowDefinition): Promise<string> => {
-    void workflow;
-    return `session-${Date.now()}`;
+    const session = await getOrchestrator().executeWorkflow(workflow);
+    return session.id;
   },
   'workflow:stop': async (): Promise<void> => {
-    return undefined;
+    getOrchestrator().disconnect();
   },
   'task:interact': async (taskId: string, input: string): Promise<void> => {
-    void taskId;
-    void input;
-    return undefined;
+    getOrchestrator().submitInteraction(taskId, input);
   },
   'task:complete': async (taskId: string): Promise<void> => {
-    void taskId;
-    return undefined;
+    getOrchestrator().completeTask(taskId);
   },
   'config:get': async <K extends keyof AppConfig>(
     key: K

@@ -23,7 +23,37 @@ const taskStatusValues = [
 
 const taskOutputStreamValues = ['stdout', 'stderr'] as const;
 
-export const workflowDefinitionSchema = z.record(z.unknown());
+const executionModeValues = ['interactive', 'headless'] as const;
+
+export const executionModeSchema = z.enum(executionModeValues);
+
+export const workflowTaskSchema = z
+  .object({
+    id: z.string(),
+    adapter: z.string(),
+    executionMode: executionModeSchema.optional(),
+    prompt: z.string().optional(),
+    extraArgs: z.array(z.string()).optional(),
+    cwd: z.string().optional(),
+    env: z.record(z.string().optional()).optional(),
+    name: z.string().optional(),
+  })
+  .strict();
+
+export const workflowStageSchema = z
+  .object({
+    id: z.string(),
+    tasks: z.array(workflowTaskSchema),
+  })
+  .strict();
+
+export const workflowDefinitionSchema = z
+  .object({
+    id: z.string(),
+    goal: z.string().optional(),
+    stages: z.array(workflowStageSchema),
+  })
+  .strict();
 
 export const orchestratorStateSchema = z.enum(orchestratorStateValues);
 export const taskStatusSchema = z.enum(taskStatusValues);
