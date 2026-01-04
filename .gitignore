@@ -11,3 +11,7 @@ test/agent-logs/
 test/*.md
 test/*.html
 test/*.txt
+
+out/
+.claude/
+.codex/

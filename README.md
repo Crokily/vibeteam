@@ -34,6 +34,16 @@ pnpm install
 
 This project uses `node-linker=hoisted` in `.npmrc` to ensure Electron can resolve native modules (like `node-pty`). Do not remove this setting.
 
+### Troubleshooting: `node-pty` spawn-helper permissions (macOS)
+
+If tests fail with `posix_spawnp failed` on macOS, the `node-pty` helper binary likely lost its executable bit (common when copying `node_modules`). Fix it with:
+
+```bash
+chmod +x node_modules/node-pty/prebuilds/darwin-<arch>/spawn-helper
+```
+
+Then re-run `pnpm test`. Replace `<arch>` with `arm64` or `x64`.
+
 ### Usage Guide: Creating a Workflow
 
 A workflow in Vibeteam consists of **Adapters** (Roles) and **Stages** (Process).
@@ -195,6 +205,16 @@ pnpm install
 ### 开发环境说明 (Electron)
 
 项目在 `.npmrc` 中使用 `node-linker=hoisted`，用于确保 Electron 能正确解析原生模块（如 `node-pty`）。请勿移除此配置。
+
+### 故障排查：`node-pty` spawn-helper 权限 (macOS)
+
+如果在 macOS 上运行测试出现 `posix_spawnp failed`，通常是 `node-pty` 的辅助二进制丢失了可执行权限（比如拷贝 `node_modules` 导致）。可用以下命令修复：
+
+```bash
+chmod +x node_modules/node-pty/prebuilds/darwin-<arch>/spawn-helper
+```
+
+然后重新执行 `pnpm test`。将 `<arch>` 替换为 `arm64` 或 `x64`。
 
 ### 使用指南：创建工作流
 

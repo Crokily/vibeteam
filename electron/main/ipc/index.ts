@@ -27,8 +27,8 @@ export const registerIpcHandlers = (): void => {
 
   channels.forEach((channel) => {
     ipcMain.handle(channel, async (_event, ...args) => {
-      const parsedArgs = parseArgs(channel, args);
-      const handler = commandHandlers[channel];
+      const parsedArgs = parseArgs(channel, args) as unknown[];
+      const handler = commandHandlers[channel] as (...handlerArgs: unknown[]) => unknown;
       return handler(...parsedArgs);
     });
   });

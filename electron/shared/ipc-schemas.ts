@@ -1,5 +1,9 @@
-import { z } from 'zod';
-import { appConfigKeySchema, appConfigSchema } from './config';
+import { z, type ZodType } from 'zod';
+import {
+  appConfigKeySchema,
+  appConfigSchema,
+  type AppConfig,
+} from './config';
 
 const orchestratorStateValues = [
   'IDLE',
@@ -82,4 +86,8 @@ export const ipcEventSchemas = {
   'orchestrator:error': orchestratorErrorSchema,
 } as const;
 
-export const appConfigValueSchemas = appConfigSchema.shape;
+type AppConfigValueSchemas = {
+  [K in keyof AppConfig]: ZodType<AppConfig[K]>;
+};
+
+export const appConfigValueSchemas = appConfigSchema.shape as AppConfigValueSchemas;

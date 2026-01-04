@@ -1,7 +1,6 @@
 import Store from 'electron-store';
 import {
   appConfigKeySchema,
-  appConfigSchema,
   defaultConfig,
   type AppConfig,
 } from '../shared/config';
@@ -12,17 +11,18 @@ const store = new Store<AppConfig>({
 });
 
 export const getConfig = <K extends keyof AppConfig>(key: K): AppConfig[K] => {
-  const parsedKey = appConfigKeySchema.parse(key);
+  const parsedKey = appConfigKeySchema.parse(key) as K;
   const value = store.get(parsedKey);
-  return appConfigSchema.shape[parsedKey].parse(value);
+  const schema = appConfigValueSchemas[parsedKey];
+  return schema.parse(value);
 };
 
 export const setConfig = <K extends keyof AppConfig>(
   key: K,
   value: AppConfig[K]
 ): void => {
-  const parsedKey = appConfigKeySchema.parse(key);
+  const parsedKey = appConfigKeySchema.parse(key) as K;
   const schema = appConfigValueSchemas[parsedKey];
-  const parsedValue = schema.parse(value) as AppConfig[K];
+  const parsedValue = schema.parse(value);
   store.set(parsedKey, parsedValue);
 };

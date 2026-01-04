@@ -26,16 +26,16 @@ export const commandHandlers = {
   'config:get': async <K extends keyof AppConfig>(
     key: K
   ): Promise<AppConfig[K]> => {
-    const parsedKey = appConfigKeySchema.parse(key);
+    const parsedKey = appConfigKeySchema.parse(key) as K;
     return getConfig(parsedKey);
   },
   'config:set': async <K extends keyof AppConfig>(
     key: K,
     value: AppConfig[K]
   ): Promise<void> => {
-    const parsedKey = appConfigKeySchema.parse(key);
+    const parsedKey = appConfigKeySchema.parse(key) as K;
     const schema = appConfigValueSchemas[parsedKey];
-    const parsedValue = schema.parse(value) as AppConfig[K];
+    const parsedValue = schema.parse(value);
     setConfig(parsedKey, parsedValue);
   },
 } as const;
