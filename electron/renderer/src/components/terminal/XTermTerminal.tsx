@@ -51,13 +51,14 @@ export const XTermTerminal = ({
       if (!entry) {
         return EMPTY_OUTPUT;
       }
-      return executionMode === 'headless' ? entry.cleaned : entry.raw;
+      return entry.raw;
     }) ?? EMPTY_OUTPUT;
   const isHeadless = executionMode === 'headless';
   const containerRef = useRef<HTMLDivElement | null>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const outputIndexRef = useRef(0);
+  const executionModeRef = useRef(executionMode);
   const canInteractRef = useRef(canInteract);
   const interactionRef = useRef(onInteractionSubmitted);
 
@@ -133,6 +134,15 @@ export const XTermTerminal = ({
       return;
     }
 
+    const modeChanged = executionModeRef.current !== executionMode;
+    if (modeChanged) {
+      executionModeRef.current = executionMode;
+      terminal.options.convertEol = isHeadless;
+      terminal.options.disableStdin = isHeadless;
+      terminal.reset();
+      outputIndexRef.current = 0;
+    }
+
     if (output.length < outputIndexRef.current) {
       terminal.reset();
       outputIndexRef.current = 0;
@@ -145,7 +155,7 @@ export const XTermTerminal = ({
       }
       outputIndexRef.current = output.length;
     }
-  }, [output]);
+  }, [executionMode, isHeadless, output]);
 
   useEffect(() => {
     if (!active) {
