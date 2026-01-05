@@ -166,14 +166,32 @@ export const XTermTerminal = ({
     fitAddonRef.current?.fit();
   }, [active]);
 
+  const handleComplete = () => {
+    void ipcClient.task.complete(taskId).catch(() => undefined);
+  };
+
   return (
     <div
-      className={`absolute inset-0 transition-opacity duration-200 ${
+      className={`absolute inset-0 flex flex-col transition-opacity duration-200 ${
         active ? 'opacity-100' : 'pointer-events-none opacity-0'
-      } bg-[#292f39] p-4`}
+      } bg-[#292f39]`}
       aria-hidden={!active}
     >
-      <div ref={containerRef} className="h-full w-full" />
+      <div className="relative flex-1 min-h-0 p-4 pb-0">
+        <div ref={containerRef} className="h-full w-full" />
+      </div>
+      
+      {!isHeadless && (
+        <div className="flex items-center justify-between border-t border-white/5 bg-[#292f39] px-4 py-2 text-xs text-[#e2e8f0]">
+          <span className="opacity-50">When this task has finished running, click —&gt;</span>
+          <button
+            onClick={handleComplete}
+            className="rounded-full border border-border/60 bg-transparent px-3 py-1 text-xs text-ash transition hover:border-iron/60 hover:text-iron active:bg-white/5"
+          >
+            Finish
+          </button>
+        </div>
+      )}
     </div>
   );
 };
