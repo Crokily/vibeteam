@@ -66,6 +66,11 @@ export interface InteractionNeeded {
   context?: Record<string, unknown>;
 }
 
+export interface WorkflowStarted {
+  sessionId: string | null;
+  workflow: WorkflowDefinition;
+}
+
 export interface OrchestratorError {
   message: string;
   stack?: string;
@@ -86,6 +91,7 @@ export type IpcEvents = {
   'orchestrator:taskStatusChange': TaskStatusChange;
   'orchestrator:taskOutput': TaskOutput;
   'orchestrator:interactionNeeded': InteractionNeeded;
+  'orchestrator:workflowStarted': WorkflowStarted;
   'orchestrator:error': OrchestratorError;
 };
 

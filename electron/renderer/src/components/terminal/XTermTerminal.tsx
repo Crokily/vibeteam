@@ -42,8 +42,18 @@ export const XTermTerminal = ({
   canInteract,
   onInteractionSubmitted,
 }: XTermTerminalProps) => {
+  const executionMode = useAppStore(
+    (state) => state.taskMeta[taskId]?.executionMode ?? 'interactive'
+  );
   const output =
-    useAppStore((state) => state.taskOutputs[taskId]?.raw) ?? EMPTY_OUTPUT;
+    useAppStore((state) => {
+      const entry = state.taskOutputs[taskId];
+      if (!entry) {
+        return EMPTY_OUTPUT;
+      }
+      return executionMode === 'headless' ? entry.cleaned : entry.raw;
+    }) ?? EMPTY_OUTPUT;
+  const isHeadless = executionMode === 'headless';
   const containerRef = useRef<HTMLDivElement | null>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -70,6 +80,8 @@ export const XTermTerminal = ({
       fontSize: 13,
       fontFamily:
         '"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+      convertEol: isHeadless,
+      disableStdin: isHeadless,
       scrollback: 5000,
       theme: terminalTheme,
       allowTransparency: true,

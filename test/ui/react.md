@@ -1,3 +1,0 @@
-- Declarative UI makes code more predictable and easier to debug.
-- Component-based architecture promotes reusability and maintainability.
-- React uses a Virtual DOM to optimize rendering and improve performance. (Reason: React runs on a JavaScript engine, not native machine code.)

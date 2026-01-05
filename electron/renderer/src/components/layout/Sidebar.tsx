@@ -8,57 +8,89 @@ const statusBadge: Record<TaskStatus, string> = {
   ERROR: 'border-rose-400/40 text-rose-200 bg-rose-400/10',
 };
 
-type SidebarProps = {
+type WorkflowStageView = {
+  id: string;
+  index: number;
   taskIds: string[];
+};
+
+type TaskMeta = {
+  label: string;
+};
+
+type SidebarProps = {
+  stages: WorkflowStageView[];
+  taskMeta: Record<string, TaskMeta>;
   taskStatuses: Record<string, TaskStatus>;
   activeTaskId: string | null;
   pendingCount: number;
+  onSelectTask: (taskId: string) => void;
 };
 
 export const Sidebar = ({
-  taskIds,
+  stages,
+  taskMeta,
   taskStatuses,
   activeTaskId,
   pendingCount,
+  onSelectTask,
 }: SidebarProps) => {
+  const taskCount = stages.reduce(
+    (total, stage) => total + stage.taskIds.length,
+    0
+  );
+
   return (
     <div className="space-y-4">
       <section className="rounded-2xl border border-border bg-graphite/70 p-4">
         <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-ash">
           <span>Workflow</span>
-          <span className="text-iron">{taskIds.length}</span>
+          <span className="text-iron">{taskCount}</span>
         </div>
-        <div className="mt-4 space-y-2 text-xs">
-          {taskIds.length === 0 ? (
+        <div className="mt-4 space-y-3 text-xs">
+          {taskCount === 0 ? (
             <div className="rounded-lg border border-border bg-ink/50 px-3 py-2 text-ash">
               No tasks
             </div>
           ) : (
-            taskIds.map((taskId) => {
-              const isActive = taskId === activeTaskId;
-              const status = taskStatuses[taskId];
-              return (
-                <div
-                  key={taskId}
-                  className={`flex items-center justify-between rounded-lg border px-3 py-2 ${
-                    isActive
-                      ? 'border-accent/40 bg-ink/70 text-iron'
-                      : 'border-border bg-ink/50 text-ash'
-                  }`}
-                >
-                  <span className="truncate" title={taskId}>
-                    {taskId}
-                  </span>
-                  {status ? (
-                    <span
-                      className={`ml-2 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] ${statusBadge[status]}`}
-                    >
-                      {status.replaceAll('_', ' ')}
-                    </span>
-                  ) : null}
+            stages.map((stage) => (
+              <div
+                key={stage.id}
+                className="rounded-xl border border-border/70 bg-ink/50 p-3"
+              >
+                <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.32em] text-ash">
+                  <span>{`Stage ${stage.index + 1}`}</span>
+                  <span className="text-iron">{stage.taskIds.length}</span>
                 </div>
-              );
-            })
+                <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                  {stage.taskIds.map((taskId) => {
+                    const isActive = taskId === activeTaskId;
+                    const status = taskStatuses[taskId] ?? 'PENDING';
+                    const label = taskMeta[taskId]?.label ?? taskId;
+                    return (
+                      <button
+                        key={taskId}
+                        onClick={() => onSelectTask(taskId)}
+                        className={`flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition ${
+                          isActive
+                            ? 'border-accent/40 bg-ink/70 text-iron'
+                            : 'border-border/70 bg-ink/40 text-ash hover:border-iron/60 hover:text-iron'
+                        }`}
+                      >
+                        <span className="max-w-[140px] truncate" title={label}>
+                          {label}
+                        </span>
+                        <span
+                          className={`rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.2em] ${statusBadge[status]}`}
+                        >
+                          {status.replaceAll('_', ' ')}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))
           )}
         </div>
       </section>
@@ -68,7 +100,7 @@ export const Sidebar = ({
           Signals
         </div>
         <div className="mt-3 flex items-center justify-between text-xs text-ash">
-          <span>Awaiting</span>
+          <span>Awaiting input</span>
           <span className="text-iron">{pendingCount}</span>
         </div>
       </section>

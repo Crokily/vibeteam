@@ -10,7 +10,9 @@ import { connectIpcToStore } from './stores/ipc-sync';
 export default function App() {
   const orchestratorState = useAppStore((state) => state.orchestratorState);
   const sessionId = useAppStore((state) => state.sessionId);
+  const workflowStages = useAppStore((state) => state.workflowStages);
   const taskStatuses = useAppStore((state) => state.taskStatuses);
+  const taskMeta = useAppStore((state) => state.taskMeta);
   const pendingInteractions = useAppStore((state) => state.pendingInteractions);
   const activeTaskId = useAppStore((state) => state.activeTaskId);
   const setActiveTaskId = useAppStore((state) => state.setActiveTaskId);
@@ -22,12 +24,39 @@ export default function App() {
   }, []);
 
   const taskIds = useMemo(() => {
-    const ids = new Set(Object.keys(taskStatuses));
-    pendingInteractions.forEach((interaction) => {
-      ids.add(interaction.taskId);
+    const ordered: string[] = [];
+    const seen = new Set<string>();
+
+    if (workflowStages.length > 0) {
+      workflowStages.forEach((stage) => {
+        stage.taskIds.forEach((taskId) => {
+          if (seen.has(taskId)) {
+            return;
+          }
+          seen.add(taskId);
+          ordered.push(taskId);
+        });
+      });
+    }
+
+    Object.keys(taskStatuses).forEach((taskId) => {
+      if (seen.has(taskId)) {
+        return;
+      }
+      seen.add(taskId);
+      ordered.push(taskId);
     });
-    return Array.from(ids);
-  }, [pendingInteractions, taskStatuses]);
+
+    pendingInteractions.forEach((interaction) => {
+      if (seen.has(interaction.taskId)) {
+        return;
+      }
+      seen.add(interaction.taskId);
+      ordered.push(interaction.taskId);
+    });
+
+    return ordered;
+  }, [pendingInteractions, taskStatuses, workflowStages]);
   const attentionTaskIds = useMemo(
     () => new Set(pendingInteractions.map((interaction) => interaction.taskId)),
     [pendingInteractions]
@@ -57,6 +86,15 @@ export default function App() {
   }, [activeTaskId, pendingInteractions, setActiveTaskId]);
 
   const resolvedActiveTaskId = activeTaskId ?? taskIds[0] ?? null;
+  const sidebarStages = useMemo(() => {
+    if (workflowStages.length > 0) {
+      return workflowStages;
+    }
+    if (taskIds.length === 0) {
+      return [];
+    }
+    return [{ id: 'workflow', index: 0, taskIds }];
+  }, [taskIds, workflowStages]);
 
   return (
     <MainLayout
@@ -68,10 +106,12 @@ export default function App() {
       }
       sidebar={
         <Sidebar
-          taskIds={taskIds}
+          stages={sidebarStages}
+          taskMeta={taskMeta}
           taskStatuses={taskStatuses}
           activeTaskId={resolvedActiveTaskId}
           pendingCount={pendingInteractions.length}
+          onSelectTask={setActiveTaskId}
         />
       }
     >
@@ -84,9 +124,11 @@ export default function App() {
           <TerminalTabs
             tabs={taskIds.map((taskId) => ({
               id: taskId,
-              label: taskId,
+              label: taskMeta[taskId]?.label ?? taskId,
               isActive: taskId === resolvedActiveTaskId,
-              needsAttention: attentionTaskIds.has(taskId),
+              needsAttention:
+                attentionTaskIds.has(taskId) ||
+                taskStatuses[taskId] === 'WAITING_FOR_USER',
             }))}
             onSelect={setActiveTaskId}
           />
@@ -97,8 +139,9 @@ export default function App() {
                 taskId={taskId}
                 active={taskId === resolvedActiveTaskId}
                 canInteract={
-                  taskStatuses[taskId] === 'RUNNING' ||
-                  taskStatuses[taskId] === 'WAITING_FOR_USER'
+                  taskMeta[taskId]?.executionMode !== 'headless' &&
+                  (taskStatuses[taskId] === 'RUNNING' ||
+                    taskStatuses[taskId] === 'WAITING_FOR_USER')
                 }
                 onInteractionSubmitted={resolveInteraction}
               />

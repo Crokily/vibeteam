@@ -1,3 +1,4 @@
+import { ExecutionMode } from '../../adapters/IAgentAdapter';
 import { AgentEvent } from '../../core/AgentEvent';
 import { SessionManager } from '../state/SessionManager';
 import { TaskStatus } from '../state/WorkflowSession';
@@ -78,6 +79,7 @@ export const handleRunnerEvent = (
   deps: TaskRunnerDeps,
   taskId: string,
   stageIndex: number,
+  executionMode: ExecutionMode,
   event: AgentEvent,
 ): void => {
   const session = deps.sessionManager.getSession();
@@ -91,6 +93,25 @@ export const handleRunnerEvent = (
   deps.emit('agentEvent', payload);
 
   if (event.type === 'data') {
+    if (
+      executionMode === 'interactive' &&
+      session.taskStatus[taskId] !== 'WAITING_FOR_USER'
+    ) {
+      const interactionHints = [
+        /apply this change\?/i,
+        /allow execution of:/i,
+        /waiting for user confirmation/i,
+        /requires user confirmation/i,
+        /\ballow once\b/i,
+        /\bconfirm\b/i,
+      ];
+      if (interactionHints.some((pattern) => pattern.test(event.clean))) {
+        handleInteractionNeeded(deps, taskId, {
+          source: 'output-sniff',
+        });
+      }
+    }
+
     deps.sessionManager.appendLog(taskId, event.clean);
     const outputEvent: OrchestratorTaskOutput = {
       taskId,

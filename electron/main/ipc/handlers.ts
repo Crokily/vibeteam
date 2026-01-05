@@ -6,10 +6,15 @@ import type { WorkflowDefinition } from '../../shared/ipc-types';
 import { appConfigValueSchemas } from '../../shared/ipc-schemas';
 import { getConfig, setConfig } from '../config-store';
 import { getOrchestrator } from '../orchestrator';
+import { sendIpcEvent } from './events';
 
 export const commandHandlers = {
   'workflow:execute': async (workflow: WorkflowDefinition): Promise<string> => {
-    const session = await getOrchestrator().executeWorkflow(workflow);
+    const orchestrator = getOrchestrator();
+    const executePromise = orchestrator.executeWorkflow(workflow);
+    const sessionId = orchestrator.getSession()?.id ?? null;
+    sendIpcEvent('orchestrator:workflowStarted', { sessionId, workflow });
+    const session = await executePromise;
     return session.id;
   },
   'workflow:stop': async (): Promise<void> => {

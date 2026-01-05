@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type {
+  ExecutionMode,
   InteractionNeeded,
   OrchestratorError,
   OrchestratorState,
@@ -7,13 +8,29 @@ import type {
   TaskOutput,
   TaskStatus,
   TaskStatusChange,
+  WorkflowDefinition,
 } from '../../../shared/ipc-types';
+
+type WorkflowStageView = {
+  id: string;
+  index: number;
+  taskIds: string[];
+};
+
+type TaskMeta = {
+  executionMode: ExecutionMode;
+  label: string;
+  stageIndex: number;
+};
 
 interface AppState {
   connected: boolean;
   orchestratorState: OrchestratorState;
   sessionId: string | null;
+  workflow: WorkflowDefinition | null;
+  workflowStages: WorkflowStageView[];
   taskStatuses: Record<string, TaskStatus>;
+  taskMeta: Record<string, TaskMeta>;
   taskOutputs: Record<string, { raw: string[]; cleaned: string[] }>;
   pendingInteractions: InteractionNeeded[];
   activeTaskId: string | null;
@@ -23,6 +40,7 @@ interface AppState {
 interface AppActions {
   setConnected: (connected: boolean) => void;
   applyStateChange: (payload: OrchestratorStateChange) => void;
+  setWorkflow: (workflow: WorkflowDefinition, sessionId: string | null) => void;
   updateTaskStatus: (payload: TaskStatusChange) => void;
   appendTaskOutput: (payload: TaskOutput) => void;
   addInteraction: (payload: InteractionNeeded) => void;
@@ -37,7 +55,10 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
   connected: false,
   orchestratorState: 'IDLE',
   sessionId: null,
+  workflow: null,
+  workflowStages: [],
   taskStatuses: {},
+  taskMeta: {},
   taskOutputs: {},
   pendingInteractions: [],
   activeTaskId: null,
@@ -47,6 +68,36 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
     set({
       orchestratorState: payload.current,
       sessionId: payload.sessionId,
+    }),
+  setWorkflow: (workflow, sessionId) =>
+    set(() => {
+      const taskStatuses: Record<string, TaskStatus> = {};
+      const taskMeta: Record<string, TaskMeta> = {};
+      const workflowStages: WorkflowStageView[] = workflow.stages.map(
+        (stage, stageIndex) => {
+          const taskIds = stage.tasks.map((task) => {
+            taskStatuses[task.id] = 'PENDING';
+            taskMeta[task.id] = {
+              executionMode: task.executionMode ?? 'interactive',
+              label: task.name ?? task.id,
+              stageIndex,
+            };
+            return task.id;
+          });
+          return { id: stage.id, index: stageIndex, taskIds };
+        }
+      );
+      const firstTaskId = workflowStages[0]?.taskIds[0] ?? null;
+      return {
+        sessionId,
+        workflow,
+        workflowStages,
+        taskStatuses,
+        taskMeta,
+        taskOutputs: {},
+        pendingInteractions: [],
+        activeTaskId: firstTaskId,
+      };
     }),
   updateTaskStatus: (payload) =>
     set((state) => ({

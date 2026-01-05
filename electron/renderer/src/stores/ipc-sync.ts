@@ -8,6 +8,7 @@ export const connectIpcToStore = (): (() => void) => {
   const {
     setConnected,
     applyStateChange,
+    setWorkflow,
     updateTaskStatus,
     appendTaskOutput,
     addInteraction,
@@ -18,6 +19,12 @@ export const connectIpcToStore = (): (() => void) => {
 
   const unsubscribers = [
     window.electronAPI.events.on('orchestrator:stateChange', applyStateChange),
+    window.electronAPI.events.on(
+      'orchestrator:workflowStarted',
+      ({ sessionId, workflow }) => {
+        setWorkflow(workflow, sessionId);
+      }
+    ),
     window.electronAPI.events.on('orchestrator:taskStatusChange', updateTaskStatus),
     window.electronAPI.events.on('orchestrator:taskOutput', appendTaskOutput),
     window.electronAPI.events.on('orchestrator:interactionNeeded', addInteraction),

@@ -92,6 +92,13 @@ export const interactionNeededSchema = z
   })
   .strict();
 
+export const workflowStartedSchema = z
+  .object({
+    sessionId: z.string().nullable(),
+    workflow: workflowDefinitionSchema,
+  })
+  .strict();
+
 export const orchestratorErrorSchema = z
   .object({
     message: z.string(),
@@ -114,6 +121,7 @@ export const ipcEventSchemas = {
   'orchestrator:taskStatusChange': taskStatusChangeSchema,
   'orchestrator:taskOutput': taskOutputSchema,
   'orchestrator:interactionNeeded': interactionNeededSchema,
+  'orchestrator:workflowStarted': workflowStartedSchema,
   'orchestrator:error': orchestratorErrorSchema,
 } as const;
 

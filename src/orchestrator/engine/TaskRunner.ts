@@ -99,7 +99,7 @@ export class TaskRunner extends EventEmitter {
         stageIndex,
         executionMode,
         onRunnerEvent: (event) =>
-          handleRunnerEvent(handlerDeps, task.id, stageIndex, event),
+          handleRunnerEvent(handlerDeps, task.id, stageIndex, executionMode, event),
         onInteractionNeeded: (payload) =>
           handleInteractionNeeded(handlerDeps, task.id, payload),
         onAdapterStateChange: (...args) =>
