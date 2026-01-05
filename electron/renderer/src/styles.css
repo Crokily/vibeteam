@@ -77,6 +77,21 @@
     }
   }
 
+  @keyframes tab-pulse {
+    0% {
+      transform: scale(0.6);
+      opacity: 0.45;
+    }
+    70% {
+      transform: scale(1.6);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1.6);
+      opacity: 0;
+    }
+  }
+
   .reveal {
     animation: reveal 0.6s ease-out both;
   }
@@ -91,5 +106,9 @@
 
   .reveal-delay-3 {
     animation-delay: 0.24s;
+  }
+
+  .tab-pulse {
+    animation: tab-pulse 1.6s ease-out infinite;
   }
 }

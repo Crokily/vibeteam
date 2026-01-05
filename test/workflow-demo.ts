@@ -214,7 +214,11 @@ rl.on('line', (line) => {
       } else {
         console.log(`>>> Sending to ${fullTaskId}: "${message}"`);
         try {
-          executor.submitInteraction(fullTaskId, message);
+        const rawInput =
+          message.endsWith('\n') || message.endsWith('\r')
+            ? message
+            : `${message}\r`;
+        executor.submitInteraction(fullTaskId, rawInput);
           writeLog(fullTaskId, `[${new Date().toISOString()}] INPUT: ${message}`);
           // 从等待列表中移除，防止重复发送
           pendingInteractions.delete(fullTaskId);
@@ -237,7 +241,11 @@ rl.on('line', (line) => {
         pendingInteractions.delete(taskId);
       } else {
         console.log(`>>> (Implicit) Sending to ${taskId}: "${trimmed}"`);
-        executor.submitInteraction(taskId, trimmed);
+        const rawInput =
+          trimmed.endsWith('\n') || trimmed.endsWith('\r')
+            ? trimmed
+            : `${trimmed}\r`;
+        executor.submitInteraction(taskId, rawInput);
         writeLog(taskId, `[${new Date().toISOString()}] INPUT: ${trimmed}`);
         pendingInteractions.delete(taskId);
       }

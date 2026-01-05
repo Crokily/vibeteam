@@ -241,7 +241,7 @@ async function runProjectDocsIntegration(): Promise<void> {
     log(detail);
     logManager.writeLog(taskId, `${detail}\n`);
     try {
-      orchestrator.submitInteraction(taskId, '/exit');
+      orchestrator.submitInteraction(taskId, '/exit\r');
     } catch (error) {
       log(`Failed to send /exit to ${taskId}: ${String(error)}`);
     }

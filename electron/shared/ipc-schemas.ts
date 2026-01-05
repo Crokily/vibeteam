@@ -103,6 +103,7 @@ export const ipcCommandSchemas = {
   'workflow:execute': z.tuple([workflowDefinitionSchema]),
   'workflow:stop': z.tuple([]),
   'task:interact': z.tuple([z.string(), z.string()]),
+  'task:resize': z.tuple([z.string(), z.number().int().min(1), z.number().int().min(1)]),
   'task:complete': z.tuple([z.string()]),
   'config:get': z.tuple([appConfigKeySchema]),
   'config:set': z.tuple([appConfigKeySchema, z.unknown()]),

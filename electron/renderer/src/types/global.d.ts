@@ -16,6 +16,7 @@ declare global {
       };
       task: {
         interact: (taskId: string, input: string) => Promise<void>;
+        resize: (taskId: string, cols: number, rows: number) => Promise<void>;
         complete: (taskId: string) => Promise<void>;
       };
       config: {

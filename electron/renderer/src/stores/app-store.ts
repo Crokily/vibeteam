@@ -14,7 +14,7 @@ interface AppState {
   orchestratorState: OrchestratorState;
   sessionId: string | null;
   taskStatuses: Record<string, TaskStatus>;
-  taskOutputs: Record<string, string[]>;
+  taskOutputs: Record<string, { raw: string[]; cleaned: string[] }>;
   pendingInteractions: InteractionNeeded[];
   activeTaskId: string | null;
   lastError: OrchestratorError | null;
@@ -26,9 +26,11 @@ interface AppActions {
   updateTaskStatus: (payload: TaskStatusChange) => void;
   appendTaskOutput: (payload: TaskOutput) => void;
   addInteraction: (payload: InteractionNeeded) => void;
+  resolveInteraction: (taskId: string) => void;
   setActiveTaskId: (taskId: string | null) => void;
   setError: (payload: OrchestratorError) => void;
   clearError: () => void;
+  clearTaskOutputs: () => void;
 }
 
 export const useAppStore = create<AppState & AppActions>((set) => ({
@@ -57,17 +59,35 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
     set((state) => ({
       taskOutputs: {
         ...state.taskOutputs,
-        [payload.taskId]: [
-          ...(state.taskOutputs[payload.taskId] ?? []),
-          payload.cleaned,
-        ],
+        [payload.taskId]: {
+          raw: [
+            ...(state.taskOutputs[payload.taskId]?.raw ?? []),
+            payload.raw,
+          ],
+          cleaned: [
+            ...(state.taskOutputs[payload.taskId]?.cleaned ?? []),
+            payload.cleaned,
+          ],
+        },
       },
     })),
   addInteraction: (payload) =>
     set((state) => ({
-      pendingInteractions: [...state.pendingInteractions, payload],
+      pendingInteractions: [
+        ...state.pendingInteractions.filter(
+          (interaction) => interaction.taskId !== payload.taskId
+        ),
+        payload,
+      ],
+    })),
+  resolveInteraction: (taskId) =>
+    set((state) => ({
+      pendingInteractions: state.pendingInteractions.filter(
+        (interaction) => interaction.taskId !== taskId
+      ),
     })),
   setActiveTaskId: (taskId) => set({ activeTaskId: taskId }),
   setError: (payload) => set({ lastError: payload }),
   clearError: () => set({ lastError: null }),
+  clearTaskOutputs: () => set({ taskOutputs: {} }),
 }));

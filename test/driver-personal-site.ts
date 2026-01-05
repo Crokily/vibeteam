@@ -156,7 +156,7 @@ async function runPersonalSiteIntegration(): Promise<void> {
     unexpectedInteractions.push(detail);
     log(detail);
     try {
-      orchestrator.submitInteraction(taskId, '/exit');
+      orchestrator.submitInteraction(taskId, '/exit\r');
     } catch (error) {
       log(`Failed to send /exit to ${taskId}: ${String(error)}`);
     }

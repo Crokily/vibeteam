@@ -15,6 +15,8 @@ const electronAPI = {
   task: {
     interact: (taskId: string, input: string) =>
       ipcRenderer.invoke('task:interact', taskId, input) as Promise<void>,
+    resize: (taskId: string, cols: number, rows: number) =>
+      ipcRenderer.invoke('task:resize', taskId, cols, rows) as Promise<void>,
     complete: (taskId: string) =>
       ipcRenderer.invoke('task:complete', taskId) as Promise<void>,
   },

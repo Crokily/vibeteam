@@ -134,7 +134,7 @@ describe('WorkflowExecutor', () => {
     await runPromise;
   });
 
-  it('validates submitInteraction when not waiting', async () => {
+  it('allows submitInteraction for interactive tasks while running', async () => {
     const runner = new FakeRunner();
     const executor = createExecutor(() => runner);
 
@@ -147,9 +147,8 @@ describe('WorkflowExecutor', () => {
       throw new Error('Expected adapter instance to be created.');
     }
 
-    expect(() => executor.submitInteraction('task-0', 'yes')).toThrow(
-      'not waiting',
-    );
+    executor.submitInteraction('task-0', 'yes');
+    expect(runner.sent.slice(-1)).toEqual(['yes']);
 
     runner.emit('event', {
       type: 'data',
@@ -160,7 +159,7 @@ describe('WorkflowExecutor', () => {
 
     expect(executor.getSession().taskStatus['task-0']).toBe('WAITING_FOR_USER');
 
-    executor.submitInteraction('task-0', 'yes');
+    executor.submitInteraction('task-0', 'yes\r');
     expect(runner.sent.slice(-1)).toEqual(['yes\r']);
 
     runner.emitExit();

@@ -18,6 +18,13 @@ export const commandHandlers = {
   'task:interact': async (taskId: string, input: string): Promise<void> => {
     getOrchestrator().submitInteraction(taskId, input);
   },
+  'task:resize': async (
+    taskId: string,
+    cols: number,
+    rows: number
+  ): Promise<void> => {
+    getOrchestrator().resizeTask(taskId, cols, rows);
+  },
   'task:complete': async (taskId: string): Promise<void> => {
     getOrchestrator().completeTask(taskId);
   },

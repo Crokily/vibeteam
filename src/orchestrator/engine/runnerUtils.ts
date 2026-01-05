@@ -9,13 +9,6 @@ export const asEmitter = (adapter: IAgentAdapter): AdapterEmitter | null => {
   return null;
 };
 
-export const normalizeInput = (input: string): string => {
-  if (input.endsWith('\n') || input.endsWith('\r')) {
-    return input;
-  }
-  return `${input}\r`;
-};
-
 export const attachAdapterListeners = (
   emitter: AdapterEmitter,
   onInteractionNeeded: (payload?: unknown) => void,

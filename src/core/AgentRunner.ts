@@ -93,6 +93,18 @@ export class AgentRunner extends EventEmitter {
     this.ptyProcess.write(input);
   }
 
+  resize(cols: number, rows: number): void {
+    if (!this.ptyProcess) {
+      return;
+    }
+
+    if (cols <= 0 || rows <= 0) {
+      return;
+    }
+
+    this.ptyProcess.resize(cols, rows);
+  }
+
   stop(): void {
     if (!this.ptyProcess) {
       return;

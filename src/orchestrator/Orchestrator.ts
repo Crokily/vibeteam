@@ -152,6 +152,14 @@ export class Orchestrator extends EventEmitter {
     this.executor.submitInteraction(taskId, input);
   }
 
+  resizeTask(taskId: string, cols: number, rows: number): void {
+    if (!this.executor) {
+      return;
+    }
+
+    this.executor.resizeTask(taskId, cols, rows);
+  }
+
   completeTask(taskId: string): void {
     if (!this.executor) {
       throw new Error('No active session.');

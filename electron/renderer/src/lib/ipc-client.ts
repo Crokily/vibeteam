@@ -17,6 +17,8 @@ export const ipcClient = {
   task: {
     interact: (taskId: string, input: string) =>
       getApi().task.interact(taskId, input),
+    resize: (taskId: string, cols: number, rows: number) =>
+      getApi().task.resize(taskId, cols, rows),
     complete: (taskId: string) => getApi().task.complete(taskId),
   },
   config: {

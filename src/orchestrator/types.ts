@@ -37,6 +37,7 @@ export type AgentRunnerLike = {
   start(): void;
   stop(): void;
   send(input: string): void;
+  resize?(cols: number, rows: number): void;
   on(event: 'event', listener: (event: AgentEvent) => void): void;
   off?(event: 'event', listener: (event: AgentEvent) => void): void;
 };

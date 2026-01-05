@@ -1,0 +1,3 @@
+- Approachable learning curve with comprehensive and clear documentation.
+- Reactive data binding system for efficient and seamless UI updates.
+- Versatile and progressive framework structure.

@@ -75,6 +75,7 @@ export type IpcCommands = {
   'workflow:execute': (workflow: WorkflowDefinition) => Promise<string>;
   'workflow:stop': () => Promise<void>;
   'task:interact': (taskId: string, input: string) => Promise<void>;
+  'task:resize': (taskId: string, cols: number, rows: number) => Promise<void>;
   'task:complete': (taskId: string) => Promise<void>;
   'config:get': <K extends keyof AppConfig>(key: K) => Promise<AppConfig[K]>;
   'config:set': <K extends keyof AppConfig>(key: K, value: AppConfig[K]) => Promise<void>;

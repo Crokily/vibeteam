@@ -80,6 +80,10 @@ export class WorkflowExecutor extends EventEmitter {
     this.taskRunner.submitInteraction(taskId, input);
   }
 
+  resizeTask(taskId: string, cols: number, rows: number): void {
+    this.taskRunner.resizeTask(taskId, cols, rows);
+  }
+
   completeTask(taskId: string): void {
     this.taskRunner.completeTask(taskId);
   }

@@ -10,7 +10,7 @@ import {
   RunnerFactory,
   WorkflowTask,
 } from '../types';
-import { asEmitter, attachAdapterListeners, normalizeInput } from './runnerUtils';
+import { asEmitter, attachAdapterListeners } from './runnerUtils';
 import { createRunner, resolveLaunchConfig } from './runnerFactory';
 import { recordInitialPrompt } from './runnerPrompt';
 import {
@@ -66,6 +66,19 @@ export class TaskRunner extends EventEmitter {
       prompt,
       task.extraArgs,
     );
+    const baseEnv = {
+      ...process.env,
+      ...(launchConfig.env ?? {}),
+    };
+    if (executionMode === 'interactive') {
+      if (!baseEnv.TERM) {
+        baseEnv.TERM = 'xterm-256color';
+      }
+      if (!baseEnv.COLORTERM) {
+        baseEnv.COLORTERM = 'truecolor';
+      }
+    }
+    launchConfig.env = baseEnv;
     const runner = createRunner(
       this.runnerFactory,
       adapter,
@@ -123,12 +136,26 @@ export class TaskRunner extends EventEmitter {
   submitInteraction(taskId: string, input: string): void {
     const session = this.sessionManager.getSession();
     const status = session.taskStatus[taskId];
-    if (status !== 'WAITING_FOR_USER') {
-      throw new Error(`Task "${taskId}" is not waiting for user input.`);
+    const context = this.activeRunners.get(taskId);
+    if (!context) {
+      throw new Error(`Task "${taskId}" is not active.`);
+    }
+
+    if (context.executionMode !== 'interactive') {
+      throw new Error(`Task "${taskId}" is not interactive.`);
+    }
+
+    if (status === 'WAITING_FOR_USER') {
+      this.sendInput(taskId, input);
+      this.updateTaskStatus(taskId, 'RUNNING');
+      return;
+    }
+
+    if (status && status !== 'RUNNING') {
+      throw new Error(`Task "${taskId}" is not accepting input.`);
     }
 
     this.sendInput(taskId, input);
-    this.updateTaskStatus(taskId, 'RUNNING');
   }
 
   completeTask(taskId: string): void {
@@ -150,14 +177,22 @@ export class TaskRunner extends EventEmitter {
     this.stopAllRunners();
   }
 
+  resizeTask(taskId: string, cols: number, rows: number): void {
+    const context = this.activeRunners.get(taskId);
+    if (!context || context.executionMode !== 'interactive') {
+      return;
+    }
+
+    context.runner.resize?.(cols, rows);
+  }
+
   private sendInput(taskId: string, input: string): void {
     const context = this.activeRunners.get(taskId);
     if (!context) {
       throw new Error(`Task "${taskId}" is not active.`);
     }
 
-    const normalized = normalizeInput(input);
-    context.runner.send(normalized);
+    context.runner.send(input);
     this.sessionManager.addHistory(input, taskId);
   }
 
