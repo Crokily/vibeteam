@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Header } from './components/layout/Header';
 import { MainLayout } from './components/layout/MainLayout';
 import { Sidebar } from './components/layout/Sidebar';
@@ -67,23 +67,6 @@ export default function App() {
       setActiveTaskId(taskIds[0]);
     }
   }, [activeTaskId, setActiveTaskId, taskIds]);
-
-  const lastInteractionCount = useRef(0);
-  useEffect(() => {
-    if (pendingInteractions.length === 0) {
-      lastInteractionCount.current = 0;
-      return;
-    }
-
-    if (pendingInteractions.length > lastInteractionCount.current) {
-      const latest = pendingInteractions[pendingInteractions.length - 1];
-      if (latest && latest.taskId !== activeTaskId) {
-        setActiveTaskId(latest.taskId);
-      }
-    }
-
-    lastInteractionCount.current = pendingInteractions.length;
-  }, [activeTaskId, pendingInteractions, setActiveTaskId]);
 
   const resolvedActiveTaskId = activeTaskId ?? taskIds[0] ?? null;
   const sidebarStages = useMemo(() => {
