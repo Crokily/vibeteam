@@ -8,6 +8,7 @@ coverage/
 .vibeteam/
 .gemini-clipboard/
 test/agent-logs/
+test/ui/
 test/*.md
 test/*.html
 test/*.txt
