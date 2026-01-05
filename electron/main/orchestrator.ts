@@ -1,5 +1,6 @@
 import type { BrowserWindow } from 'electron';
 import { GeminiAdapter } from '../../src/adapters/gemini';
+import { MockAdapter } from '../../src/adapters/MockAdapter';
 import { adapterRegistry } from '../../src/adapters/registry';
 import {
   AgentState,
@@ -23,6 +24,9 @@ let listenersAttached = false;
 
 if (!adapterRegistry.has('gemini')) {
   adapterRegistry.register('gemini', GeminiAdapter);
+}
+if (!adapterRegistry.has('mock')) {
+  adapterRegistry.register('mock', MockAdapter);
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>

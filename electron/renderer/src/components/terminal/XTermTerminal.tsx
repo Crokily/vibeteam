@@ -5,26 +5,26 @@ import { ipcClient } from '../../lib/ipc-client';
 import { useAppStore } from '../../stores/app-store';
 
 const terminalTheme = {
-  background: '#0a0f14',
-  foreground: '#e2e8f0',
-  cursor: '#f97316',
-  selection: 'rgba(249, 115, 22, 0.25)',
-  black: '#0a0f14',
-  red: '#f87171',
-  green: '#34d399',
-  yellow: '#fbbf24',
-  blue: '#60a5fa',
-  magenta: '#fb923c',
-  cyan: '#22d3ee',
-  white: '#e2e8f0',
-  brightBlack: '#1f2937',
-  brightRed: '#fca5a5',
-  brightGreen: '#6ee7b7',
-  brightYellow: '#fde047',
-  brightBlue: '#93c5fd',
-  brightMagenta: '#fdba74',
-  brightCyan: '#67e8f9',
-  brightWhite: '#f8fafc',
+  background: '#292f39',
+  foreground: '#e2e8f0', // iron
+  cursor: '#f97316',     // accent
+  selection: 'rgba(255, 255, 255, 0.1)',
+  black: '#0a0f14',      // ink
+  red: '#ef4444',
+  green: '#22c55e',
+  yellow: '#eab308',
+  blue: '#3b82f6',
+  magenta: '#d946ef',
+  cyan: '#06b6d4',
+  white: '#f8fafc',
+  brightBlack: '#475569',
+  brightRed: '#f87171',
+  brightGreen: '#4ade80',
+  brightYellow: '#fbbf24',
+  brightBlue: '#60a5fa',
+  brightMagenta: '#e879f9',
+  brightCyan: '#22d3ee',
+  brightWhite: '#ffffff',
 } as const;
 
 type XTermTerminalProps = {
@@ -84,7 +84,7 @@ export const XTermTerminal = ({
       disableStdin: isHeadless,
       scrollback: 5000,
       theme: terminalTheme,
-      allowTransparency: true,
+      allowTransparency: false,
     });
 
     const fitAddon = new FitAddon();
