@@ -55,8 +55,7 @@ The system SHALL alert the user when a task requires interaction.
 #### Scenario: Visual Alert
 - **WHEN** `interactionNeeded` event is received
 - **THEN** the corresponding task tab shows a visual indicator (e.g., pulsing animation or badge)
-- **AND** if the task is not the active tab, auto-switch to that tab
-- **AND** the terminal gains keyboard focus for user to interact directly
+- **AND** the active tab does not change automatically
 
 #### Scenario: Interaction in Terminal
 - **WHEN** user needs to interact with a task

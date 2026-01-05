@@ -58,7 +58,7 @@ Phase 2 完成了 Orchestrator 集成，IPC 事件流已经建立。现在需要
 - **视觉提示**:
   - Tab 上显示指示器（如脉冲动画或红点）
   - Orchestrator 状态显示 `AWAITING_INTERACTION`
-- **行为**: 自动切换到需要交互的任务 Tab
+- **行为**: 不自动切换，由用户自行选择需要交互的任务 Tab
 
 ### Decision 5: Store 改造 - 存储 raw output
 - **问题**: 当前 `appendTaskOutput` 只存储 `cleaned` 文本

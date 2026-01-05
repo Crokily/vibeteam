@@ -58,7 +58,7 @@ Phase 2 完成了 Orchestrator 集成，事件流已经可以从 Main Process �
 ### 交互提醒机制
 - 当 `interactionNeeded` 事件触发时：
   - 任务 Tab 显示视觉提醒（如脉冲动画/红点）
-  - 如果不是当前激活的 Tab，自动切换到该 Tab
+  - 不自动切换，由用户自行选择任务 Tab 进行交互
   - 用户在终端中直接进行交互操作
 
 ## Out of Scope (后续提案)

@@ -25,7 +25,7 @@
 
 ## 6. 数据流集成
 - [x] 6.1 实现 taskOutput → Terminal.write(raw) 的订阅
-- [x] 6.2 实现 interactionNeeded → Tab 高亮 + 自动切换
+- [x] 6.2 实现 interactionNeeded → Tab 高亮（不自动切换）
 - [x] 6.3 实现 terminal.onData() → task:interact IPC 调用
 
 ## 7. 样式和交互
