@@ -63,6 +63,19 @@ The system SHALL alert the user when a task requires interaction.
 - **AND** keystrokes are sent to the task via `task:interact` IPC
 - **AND** no separate input area is required
 
+### Requirement: Manual Task Completion
+The system SHALL provide a mechanism for users to manually signal that an interactive task is complete.
+
+#### Scenario: Completion Footer
+- **WHEN** an interactive task is running or waiting for user
+- **THEN** a footer is displayed at the bottom of the terminal panel
+- **AND** the footer contains instructions and a "Finish" button
+
+#### Scenario: Finish Action
+- **WHEN** user clicks the "Finish" button
+- **THEN** the system triggers the task completion logic via `task:complete` IPC
+- **AND** the task transitions to DONE state (handled by orchestrator)
+
 ### Requirement: Main Application Layout
 The system SHALL provide a structured layout with sidebar and main content area.
 

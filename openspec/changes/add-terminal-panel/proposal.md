@@ -11,6 +11,7 @@ Phase 2 完成了 Orchestrator 集成，事件流已经可以从 Main Process �
 - 实现主应用布局（侧边栏 + 主内容区）
 - 实现终端面板组件（多 Tab + xterm.js 渲染 + 键盘输入路由）
 - 实现交互提醒机制（Tab 指示器）
+- 实现手动结束任务 UI (Finish 按钮)
 
 ## Target Layout
 ```

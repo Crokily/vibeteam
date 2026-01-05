@@ -81,6 +81,15 @@ App.tsx
 │           └── XTermTerminal (per task, 支持键盘输入)
 ```
 
+### Decision 7: Manual Task Completion
+- **Problem**: Some interactive tasks might not exit automatically or user might want to force finish them.
+- **Solution**: Add a footer bar in the terminal component.
+- **UI**: 
+  - Text: "When this task has finished running, click ->"
+  - Button: "Finish" (border-based style, no background)
+- **Action**: Calls `ipcClient.task.complete(taskId)`
+- **Visibility**: Only visible for interactive tasks (not headless).
+
 ## Risks / Trade-offs
 
 ### Risk 1: xterm.js 内存占用
