@@ -160,7 +160,7 @@ export const XTermTerminal = ({
     <div
       className={`absolute inset-0 transition-opacity duration-200 ${
         active ? 'opacity-100' : 'pointer-events-none opacity-0'
-      }`}
+      } bg-[#292f39] p-4`}
       aria-hidden={!active}
     >
       <div ref={containerRef} className="h-full w-full" />
