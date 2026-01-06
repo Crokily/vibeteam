@@ -16,15 +16,22 @@ const electronAPI = {
   workflow: {
     execute: (workflow: WorkflowDefinition) =>
       ipcRenderer.invoke('workflow:execute', workflow) as Promise<string>,
-    stop: () => ipcRenderer.invoke('workflow:stop') as Promise<void>,
+    stop: (sessionId: string) =>
+      ipcRenderer.invoke('workflow:stop', sessionId) as Promise<void>,
   },
   task: {
-    interact: (taskId: string, input: string) =>
-      ipcRenderer.invoke('task:interact', taskId, input) as Promise<void>,
-    resize: (taskId: string, cols: number, rows: number) =>
-      ipcRenderer.invoke('task:resize', taskId, cols, rows) as Promise<void>,
-    complete: (taskId: string) =>
-      ipcRenderer.invoke('task:complete', taskId) as Promise<void>,
+    interact: (sessionId: string, taskId: string, input: string) =>
+      ipcRenderer.invoke('task:interact', sessionId, taskId, input) as Promise<void>,
+    resize: (sessionId: string, taskId: string, cols: number, rows: number) =>
+      ipcRenderer.invoke(
+        'task:resize',
+        sessionId,
+        taskId,
+        cols,
+        rows
+      ) as Promise<void>,
+    complete: (sessionId: string, taskId: string) =>
+      ipcRenderer.invoke('task:complete', sessionId, taskId) as Promise<void>,
   },
   session: {
     list: () => ipcRenderer.invoke('session:list') as Promise<SessionSummary[]>,

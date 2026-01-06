@@ -23,7 +23,7 @@ const formatTimestamp = (value: string): string => {
 };
 
 export const SessionList = () => {
-  const sessions = useAppStore((state) => state.sessions);
+  const sessions = useAppStore((state) => state.sessionSummaries);
   const setSessions = useAppStore((state) => state.setSessions);
   const loadSessionSnapshot = useAppStore((state) => state.loadSessionSnapshot);
   const containerRef = useRef<HTMLDivElement | null>(null);

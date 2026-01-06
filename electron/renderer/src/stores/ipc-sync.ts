@@ -22,6 +22,9 @@ export const connectIpcToStore = (): (() => void) => {
     window.electronAPI.events.on(
       'orchestrator:workflowStarted',
       ({ sessionId, workflow }) => {
+        if (!sessionId) {
+          return;
+        }
         setWorkflow(workflow, sessionId);
       }
     ),

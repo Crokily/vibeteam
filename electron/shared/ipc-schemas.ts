@@ -93,6 +93,7 @@ export const orchestratorStateChangeSchema = z
 
 export const taskStatusChangeSchema = z
   .object({
+    sessionId: z.string(),
     taskId: z.string(),
     status: taskStatusSchema,
   })
@@ -100,6 +101,7 @@ export const taskStatusChangeSchema = z
 
 export const taskOutputSchema = z
   .object({
+    sessionId: z.string(),
     taskId: z.string(),
     raw: z.string(),
     cleaned: z.string(),
@@ -110,6 +112,7 @@ export const taskOutputSchema = z
 
 export const interactionNeededSchema = z
   .object({
+    sessionId: z.string(),
     taskId: z.string(),
     prompt: z.string().optional(),
     context: z.record(z.unknown()).optional(),
@@ -132,10 +135,15 @@ export const orchestratorErrorSchema = z
 
 export const ipcCommandSchemas = {
   'workflow:execute': z.tuple([workflowDefinitionSchema]),
-  'workflow:stop': z.tuple([]),
-  'task:interact': z.tuple([z.string(), z.string()]),
-  'task:resize': z.tuple([z.string(), z.number().int().min(1), z.number().int().min(1)]),
-  'task:complete': z.tuple([z.string()]),
+  'workflow:stop': z.tuple([z.string()]),
+  'task:interact': z.tuple([z.string(), z.string(), z.string()]),
+  'task:resize': z.tuple([
+    z.string(),
+    z.string(),
+    z.number().int().min(1),
+    z.number().int().min(1),
+  ]),
+  'task:complete': z.tuple([z.string(), z.string()]),
   'session:list': z.tuple([]),
   'session:load': z.tuple([z.string()]),
   'session:resume': z.tuple([z.string()]),

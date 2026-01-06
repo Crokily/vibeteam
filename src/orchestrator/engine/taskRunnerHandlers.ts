@@ -48,6 +48,7 @@ export const handleInteractionNeeded = (
   deps.updateTaskStatus(taskId, 'WAITING_FOR_USER');
 
   const event: OrchestratorInteraction = {
+    sessionId: deps.sessionManager.getSession().id,
     session: deps.sessionManager.getSession(),
     taskId,
     payload,
@@ -84,6 +85,7 @@ export const handleRunnerEvent = (
 ): void => {
   const session = deps.sessionManager.getSession();
   const payload: OrchestratorAgentEvent = {
+    sessionId: session.id,
     taskId,
     stageIndex,
     session,
@@ -114,6 +116,7 @@ export const handleRunnerEvent = (
 
     deps.sessionManager.appendLog(taskId, event.clean);
     const outputEvent: OrchestratorTaskOutput = {
+      sessionId: session.id,
       taskId,
       stageIndex,
       session,

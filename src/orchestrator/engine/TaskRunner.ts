@@ -201,6 +201,7 @@ export class TaskRunner extends EventEmitter {
     this.persistSession();
 
     const payload: OrchestratorTaskStatusChange = {
+      sessionId: this.sessionManager.getSession().id,
       taskId,
       status,
       session: this.sessionManager.getSession(),

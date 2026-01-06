@@ -55,26 +55,34 @@ export const commandHandlers = {
     const orchestrator = getOrchestrator();
     const baseDir = resolveBaseDir();
     const executePromise = orchestrator.executeWorkflow(workflow, { baseDir });
-    const sessionId = orchestrator.getSession()?.id ?? null;
+    const sessionId = orchestrator.getSession()?.id;
+    if (!sessionId) {
+      throw new Error('Failed to start workflow session.');
+    }
     sendIpcEvent('orchestrator:workflowStarted', { sessionId, workflow });
-    const session = await executePromise;
-    return session.id;
+    void executePromise.catch(() => undefined);
+    return sessionId;
   },
-  'workflow:stop': async (): Promise<void> => {
-    getOrchestrator().disconnect();
+  'workflow:stop': async (sessionId: string): Promise<void> => {
+    getOrchestrator().removeSession(sessionId);
   },
-  'task:interact': async (taskId: string, input: string): Promise<void> => {
-    getOrchestrator().submitInteraction(taskId, input);
+  'task:interact': async (
+    sessionId: string,
+    taskId: string,
+    input: string
+  ): Promise<void> => {
+    getOrchestrator().submitInteraction(sessionId, taskId, input);
   },
   'task:resize': async (
+    sessionId: string,
     taskId: string,
     cols: number,
     rows: number
   ): Promise<void> => {
-    getOrchestrator().resizeTask(taskId, cols, rows);
+    getOrchestrator().resizeTask(sessionId, taskId, cols, rows);
   },
-  'task:complete': async (taskId: string): Promise<void> => {
-    getOrchestrator().completeTask(taskId);
+  'task:complete': async (sessionId: string, taskId: string): Promise<void> => {
+    getOrchestrator().completeTask(sessionId, taskId);
   },
   'session:list': async (): Promise<SessionSummary[]> => {
     const baseDir = resolveBaseDir();
@@ -119,8 +127,8 @@ export const commandHandlers = {
       baseDir,
     });
     sendIpcEvent('orchestrator:workflowStarted', { sessionId, workflow: workflowDefinition });
-    const resumedSession = await executePromise;
-    return resumedSession.id;
+    void executePromise.catch(() => undefined);
+    return sessionId;
   },
   'session:delete': async (sessionId: string): Promise<void> => {
     const baseDir = resolveBaseDir();

@@ -16,14 +16,15 @@ const getApi = () => {
 export const ipcClient = {
   workflow: {
     execute: (workflow: WorkflowDefinition) => getApi().workflow.execute(workflow),
-    stop: () => getApi().workflow.stop(),
+    stop: (sessionId: string) => getApi().workflow.stop(sessionId),
   },
   task: {
-    interact: (taskId: string, input: string) =>
-      getApi().task.interact(taskId, input),
-    resize: (taskId: string, cols: number, rows: number) =>
-      getApi().task.resize(taskId, cols, rows),
-    complete: (taskId: string) => getApi().task.complete(taskId),
+    interact: (sessionId: string, taskId: string, input: string) =>
+      getApi().task.interact(sessionId, taskId, input),
+    resize: (sessionId: string, taskId: string, cols: number, rows: number) =>
+      getApi().task.resize(sessionId, taskId, cols, rows),
+    complete: (sessionId: string, taskId: string) =>
+      getApi().task.complete(sessionId, taskId),
   },
   session: {
     list: (): Promise<SessionSummary[]> => getApi().session.list(),

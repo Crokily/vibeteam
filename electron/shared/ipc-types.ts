@@ -68,11 +68,13 @@ export interface OrchestratorStateChange {
 }
 
 export interface TaskStatusChange {
+  sessionId: string;
   taskId: string;
   status: TaskStatus;
 }
 
 export interface TaskOutput {
+  sessionId: string;
   taskId: string;
   raw: string;
   cleaned: string;
@@ -81,6 +83,7 @@ export interface TaskOutput {
 }
 
 export interface InteractionNeeded {
+  sessionId: string;
   taskId: string;
   prompt?: string;
   context?: Record<string, unknown>;
@@ -98,10 +101,15 @@ export interface OrchestratorError {
 
 export type IpcCommands = {
   'workflow:execute': (workflow: WorkflowDefinition) => Promise<string>;
-  'workflow:stop': () => Promise<void>;
-  'task:interact': (taskId: string, input: string) => Promise<void>;
-  'task:resize': (taskId: string, cols: number, rows: number) => Promise<void>;
-  'task:complete': (taskId: string) => Promise<void>;
+  'workflow:stop': (sessionId: string) => Promise<void>;
+  'task:interact': (sessionId: string, taskId: string, input: string) => Promise<void>;
+  'task:resize': (
+    sessionId: string,
+    taskId: string,
+    cols: number,
+    rows: number
+  ) => Promise<void>;
+  'task:complete': (sessionId: string, taskId: string) => Promise<void>;
   'session:list': () => Promise<SessionSummary[]>;
   'session:load': (sessionId: string) => Promise<WorkflowSessionSnapshot>;
   'session:resume': (sessionId: string) => Promise<string>;

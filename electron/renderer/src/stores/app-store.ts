@@ -26,6 +26,21 @@ type TaskMeta = {
 };
 
 type SessionMode = 'live' | 'view';
+export type SessionLayout = 'minimized' | 'standard' | 'expanded';
+
+export type SessionState = {
+  sessionId: string;
+  sessionMode: SessionMode;
+  orchestratorState: OrchestratorState;
+  workflow: WorkflowDefinition | null;
+  workflowStages: WorkflowStageView[];
+  taskStatuses: Record<string, TaskStatus>;
+  taskMeta: Record<string, TaskMeta>;
+  taskOutputs: Record<string, { raw: string[]; cleaned: string[] }>;
+  pendingInteractions: InteractionNeeded[];
+  activeTaskId: string | null;
+  layout: SessionLayout;
+};
 
 const buildWorkflowView = (workflow: WorkflowDefinition) => {
   const taskMeta: Record<string, TaskMeta> = {};
@@ -85,43 +100,10 @@ const buildTaskOutputs = (
   return outputs;
 };
 
-interface AppState {
-  connected: boolean;
-  orchestratorState: OrchestratorState;
-  sessionId: string | null;
-  sessionMode: SessionMode;
-  workflow: WorkflowDefinition | null;
-  workflowStages: WorkflowStageView[];
-  taskStatuses: Record<string, TaskStatus>;
-  taskMeta: Record<string, TaskMeta>;
-  taskOutputs: Record<string, { raw: string[]; cleaned: string[] }>;
-  pendingInteractions: InteractionNeeded[];
-  activeTaskId: string | null;
-  lastError: OrchestratorError | null;
-  sessions: SessionSummary[];
-}
-
-interface AppActions {
-  setConnected: (connected: boolean) => void;
-  applyStateChange: (payload: OrchestratorStateChange) => void;
-  setWorkflow: (workflow: WorkflowDefinition, sessionId: string | null) => void;
-  loadSessionSnapshot: (snapshot: WorkflowSessionSnapshot) => void;
-  setSessions: (sessions: SessionSummary[]) => void;
-  updateTaskStatus: (payload: TaskStatusChange) => void;
-  appendTaskOutput: (payload: TaskOutput) => void;
-  addInteraction: (payload: InteractionNeeded) => void;
-  resolveInteraction: (taskId: string) => void;
-  setActiveTaskId: (taskId: string | null) => void;
-  setError: (payload: OrchestratorError) => void;
-  clearError: () => void;
-  clearTaskOutputs: () => void;
-}
-
-export const useAppStore = create<AppState & AppActions>((set) => ({
-  connected: false,
-  orchestratorState: 'IDLE',
-  sessionId: null,
+const createSessionState = (sessionId: string): SessionState => ({
+  sessionId,
   sessionMode: 'live',
+  orchestratorState: 'IDLE',
   workflow: null,
   workflowStages: [],
   taskStatuses: {},
@@ -129,32 +111,88 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
   taskOutputs: {},
   pendingInteractions: [],
   activeTaskId: null,
+  layout: 'standard',
+});
+
+interface AppState {
+  connected: boolean;
+  activeSessionIds: string[];
+  sessions: Record<string, SessionState>;
+  lastError: OrchestratorError | null;
+  sessionSummaries: SessionSummary[];
+}
+
+interface AppActions {
+  setConnected: (connected: boolean) => void;
+  applyStateChange: (payload: OrchestratorStateChange) => void;
+  setWorkflow: (workflow: WorkflowDefinition, sessionId: string) => void;
+  loadSessionSnapshot: (snapshot: WorkflowSessionSnapshot) => void;
+  setSessions: (sessions: SessionSummary[]) => void;
+  updateTaskStatus: (payload: TaskStatusChange) => void;
+  appendTaskOutput: (payload: TaskOutput) => void;
+  addInteraction: (payload: InteractionNeeded) => void;
+  resolveInteraction: (sessionId: string, taskId: string) => void;
+  setActiveTaskId: (sessionId: string, taskId: string | null) => void;
+  setSessionLayout: (sessionId: string, layout: SessionLayout) => void;
+  removeSession: (sessionId: string) => void;
+  setError: (payload: OrchestratorError) => void;
+  clearError: () => void;
+  clearTaskOutputs: (sessionId: string) => void;
+}
+
+export const useAppStore = create<AppState & AppActions>((set) => ({
+  connected: false,
+  activeSessionIds: [],
+  sessions: {},
   lastError: null,
-  sessions: [],
+  sessionSummaries: [],
   setConnected: (connected) => set({ connected }),
   applyStateChange: (payload) =>
-    set({
-      orchestratorState: payload.current,
-      sessionId: payload.sessionId,
+    set((state) => {
+      if (!payload.sessionId) {
+        return state;
+      }
+      const current = state.sessions[payload.sessionId] ?? createSessionState(payload.sessionId);
+      return {
+        sessions: {
+          ...state.sessions,
+          [payload.sessionId]: {
+            ...current,
+            orchestratorState: payload.current,
+          },
+        },
+      };
     }),
   setWorkflow: (workflow, sessionId) =>
-    set(() => {
+    set((state) => {
+      const current = state.sessions[sessionId] ?? createSessionState(sessionId);
       const { workflowStages, taskMeta, firstTaskId } = buildWorkflowView(workflow);
       const taskStatuses = buildTaskStatuses(workflow);
+      const activeSessionIds = state.activeSessionIds.includes(sessionId)
+        ? state.activeSessionIds
+        : [...state.activeSessionIds, sessionId];
+
       return {
-        sessionId,
-        sessionMode: 'live',
-        workflow,
-        workflowStages,
-        taskStatuses,
-        taskMeta,
-        taskOutputs: {},
-        pendingInteractions: [],
-        activeTaskId: firstTaskId,
+        activeSessionIds,
+        sessions: {
+          ...state.sessions,
+          [sessionId]: {
+            ...current,
+            sessionId,
+            sessionMode: 'live',
+            workflow,
+            workflowStages,
+            taskStatuses,
+            taskMeta,
+            taskOutputs: {},
+            pendingInteractions: [],
+            activeTaskId: firstTaskId,
+          },
+        },
       };
     }),
   loadSessionSnapshot: (snapshot) =>
-    set(() => {
+    set((state) => {
       const workflow = snapshot.workflowDefinition ?? buildFallbackWorkflow(snapshot);
       const { workflowStages, taskMeta, firstTaskId } = buildWorkflowView(workflow);
       const taskStatuses: Record<string, TaskStatus> = {
@@ -169,62 +207,166 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
       }
       const pendingInteractions = Object.entries(taskStatuses)
         .filter(([, status]) => status === 'WAITING_FOR_USER')
-        .map(([taskId]) => ({ taskId }));
+        .map(([taskId]) => ({ sessionId: snapshot.id, taskId }));
+      const activeSessionIds = state.activeSessionIds.includes(snapshot.id)
+        ? state.activeSessionIds
+        : [...state.activeSessionIds, snapshot.id];
 
       return {
-        sessionId: snapshot.id,
-        sessionMode: 'view',
-        orchestratorState: 'PAUSED',
-        workflow,
-        workflowStages,
-        taskStatuses,
-        taskMeta,
-        taskOutputs: buildTaskOutputs(snapshot.logs),
-        pendingInteractions,
-        activeTaskId: firstTaskId,
+        activeSessionIds,
+        sessions: {
+          ...state.sessions,
+          [snapshot.id]: {
+            sessionId: snapshot.id,
+            sessionMode: 'view',
+            orchestratorState: 'PAUSED',
+            workflow,
+            workflowStages,
+            taskStatuses,
+            taskMeta,
+            taskOutputs: buildTaskOutputs(snapshot.logs),
+            pendingInteractions,
+            activeTaskId: firstTaskId,
+            layout: state.sessions[snapshot.id]?.layout ?? 'standard',
+          },
+        },
       };
     }),
-  setSessions: (sessions) => set({ sessions }),
+  setSessions: (sessions) => set({ sessionSummaries: sessions }),
   updateTaskStatus: (payload) =>
-    set((state) => ({
-      taskStatuses: {
-        ...state.taskStatuses,
-        [payload.taskId]: payload.status,
-      },
-    })),
-  appendTaskOutput: (payload) =>
-    set((state) => ({
-      taskOutputs: {
-        ...state.taskOutputs,
-        [payload.taskId]: {
-          raw: [
-            ...(state.taskOutputs[payload.taskId]?.raw ?? []),
-            payload.raw,
-          ],
-          cleaned: [
-            ...(state.taskOutputs[payload.taskId]?.cleaned ?? []),
-            payload.cleaned,
-          ],
+    set((state) => {
+      const current = state.sessions[payload.sessionId] ?? createSessionState(payload.sessionId);
+      return {
+        sessions: {
+          ...state.sessions,
+          [payload.sessionId]: {
+            ...current,
+            taskStatuses: {
+              ...current.taskStatuses,
+              [payload.taskId]: payload.status,
+            },
+          },
         },
-      },
-    })),
+      };
+    }),
+  appendTaskOutput: (payload) =>
+    set((state) => {
+      const current = state.sessions[payload.sessionId] ?? createSessionState(payload.sessionId);
+      return {
+        sessions: {
+          ...state.sessions,
+          [payload.sessionId]: {
+            ...current,
+            taskOutputs: {
+              ...current.taskOutputs,
+              [payload.taskId]: {
+                raw: [
+                  ...(current.taskOutputs[payload.taskId]?.raw ?? []),
+                  payload.raw,
+                ],
+                cleaned: [
+                  ...(current.taskOutputs[payload.taskId]?.cleaned ?? []),
+                  payload.cleaned,
+                ],
+              },
+            },
+          },
+        },
+      };
+    }),
   addInteraction: (payload) =>
-    set((state) => ({
-      pendingInteractions: [
-        ...state.pendingInteractions.filter(
-          (interaction) => interaction.taskId !== payload.taskId
-        ),
-        payload,
-      ],
-    })),
-  resolveInteraction: (taskId) =>
-    set((state) => ({
-      pendingInteractions: state.pendingInteractions.filter(
-        (interaction) => interaction.taskId !== taskId
-      ),
-    })),
-  setActiveTaskId: (taskId) => set({ activeTaskId: taskId }),
+    set((state) => {
+      const current = state.sessions[payload.sessionId] ?? createSessionState(payload.sessionId);
+      const filtered = current.pendingInteractions.filter(
+        (interaction) => interaction.taskId !== payload.taskId
+      );
+      return {
+        sessions: {
+          ...state.sessions,
+          [payload.sessionId]: {
+            ...current,
+            pendingInteractions: [...filtered, payload],
+          },
+        },
+      };
+    }),
+  resolveInteraction: (sessionId, taskId) =>
+    set((state) => {
+      const current = state.sessions[sessionId];
+      if (!current) {
+        return state;
+      }
+      return {
+        sessions: {
+          ...state.sessions,
+          [sessionId]: {
+            ...current,
+            pendingInteractions: current.pendingInteractions.filter(
+              (interaction) => interaction.taskId !== taskId
+            ),
+          },
+        },
+      };
+    }),
+  setActiveTaskId: (sessionId, taskId) =>
+    set((state) => {
+      const current = state.sessions[sessionId];
+      if (!current) {
+        return state;
+      }
+      return {
+        sessions: {
+          ...state.sessions,
+          [sessionId]: {
+            ...current,
+            activeTaskId: taskId,
+          },
+        },
+      };
+    }),
+  setSessionLayout: (sessionId, layout) =>
+    set((state) => {
+      const current = state.sessions[sessionId];
+      if (!current) {
+        return state;
+      }
+      return {
+        sessions: {
+          ...state.sessions,
+          [sessionId]: {
+            ...current,
+            layout,
+          },
+        },
+      };
+    }),
+  removeSession: (sessionId) =>
+    set((state) => {
+      if (!state.sessions[sessionId]) {
+        return state;
+      }
+      const { [sessionId]: _, ...rest } = state.sessions;
+      return {
+        activeSessionIds: state.activeSessionIds.filter((id) => id !== sessionId),
+        sessions: rest,
+      };
+    }),
   setError: (payload) => set({ lastError: payload }),
   clearError: () => set({ lastError: null }),
-  clearTaskOutputs: () => set({ taskOutputs: {} }),
+  clearTaskOutputs: (sessionId) =>
+    set((state) => {
+      const current = state.sessions[sessionId];
+      if (!current) {
+        return state;
+      }
+      return {
+        sessions: {
+          ...state.sessions,
+          [sessionId]: {
+            ...current,
+            taskOutputs: {},
+          },
+        },
+      };
+    }),
 }));

@@ -90,18 +90,21 @@ export type OrchestratorOptions = {
 };
 
 export type OrchestratorStateChange = {
+  sessionId: string;
   from: AgentState;
   to: AgentState;
   session: WorkflowSession | null;
 };
 
 export type OrchestratorInteraction = {
+  sessionId: string;
   session: WorkflowSession | null;
   taskId: string;
   payload?: unknown;
 };
 
 export type OrchestratorAgentEvent = {
+  sessionId: string;
   taskId: string;
   stageIndex: number;
   session: WorkflowSession | null;
@@ -109,6 +112,7 @@ export type OrchestratorAgentEvent = {
 };
 
 export type OrchestratorTaskOutput = {
+  sessionId: string;
   taskId: string;
   stageIndex: number;
   session: WorkflowSession | null;
@@ -117,6 +121,7 @@ export type OrchestratorTaskOutput = {
 };
 
 export type OrchestratorTaskStatusChange = {
+  sessionId: string;
   taskId: string;
   status: TaskStatus;
   session: WorkflowSession | null;

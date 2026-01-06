@@ -178,10 +178,12 @@ export class WorkflowExecutor extends EventEmitter {
 
     const previous = this.state;
     this.state = next;
+    const session = this.sessionManager.getSession();
     const payload = {
+      sessionId: session.id,
       from: previous,
       to: next,
-      session: this.sessionManager.getSession(),
+      session,
     };
     this.emit('stateChange', payload);
   }

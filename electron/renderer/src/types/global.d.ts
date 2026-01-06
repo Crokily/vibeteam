@@ -14,12 +14,17 @@ declare global {
     electronAPI: {
       workflow: {
         execute: (workflow: WorkflowDefinition) => Promise<string>;
-        stop: () => Promise<void>;
+        stop: (sessionId: string) => Promise<void>;
       };
       task: {
-        interact: (taskId: string, input: string) => Promise<void>;
-        resize: (taskId: string, cols: number, rows: number) => Promise<void>;
-        complete: (taskId: string) => Promise<void>;
+        interact: (sessionId: string, taskId: string, input: string) => Promise<void>;
+        resize: (
+          sessionId: string,
+          taskId: string,
+          cols: number,
+          rows: number
+        ) => Promise<void>;
+        complete: (sessionId: string, taskId: string) => Promise<void>;
       };
       session: {
         list: () => Promise<SessionSummary[]>;

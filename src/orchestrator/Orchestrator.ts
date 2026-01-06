@@ -1,14 +1,18 @@
 import { EventEmitter } from 'events';
 
 import { AdapterType } from '../adapters/registry';
+import { SessionController } from './SessionController';
 import { AgentState } from './state/AgentState';
 import { SessionManager } from './state/SessionManager';
-import { WorkflowExecutor } from './engine/WorkflowExecutor';
 import { WorkflowSession } from './state/WorkflowSession';
 import {
   ExecuteWorkflowOptions,
+  OrchestratorAgentEvent,
+  OrchestratorInteraction,
   OrchestratorOptions,
   OrchestratorStateChange,
+  OrchestratorTaskOutput,
+  OrchestratorTaskStatusChange,
   RunnerFactory,
   WorkflowDefinition,
 } from './types';
@@ -26,8 +30,19 @@ export type {
   WorkflowTask,
 } from './types';
 
+type SessionListenerSet = {
+  stateChange: (payload: OrchestratorStateChange) => void;
+  taskStatusChange: (payload: OrchestratorTaskStatusChange) => void;
+  interactionNeeded: (payload: OrchestratorInteraction) => void;
+  agentEvent: (payload: OrchestratorAgentEvent) => void;
+  taskOutput: (payload: OrchestratorTaskOutput) => void;
+  error: (error: unknown) => void;
+};
+
 export class Orchestrator extends EventEmitter {
   private readonly runnerFactory?: RunnerFactory;
+  private readonly sessions = new Map<string, SessionController>();
+  private readonly sessionListeners = new Map<string, SessionListenerSet>();
 
   private defaultAdapter:
     | {
@@ -37,22 +52,32 @@ export class Orchestrator extends EventEmitter {
         name?: string;
       }
     | null = null;
-  private sessionManager: SessionManager | null = null;
-  private executor: WorkflowExecutor | null = null;
-  private state: AgentState = AgentState.IDLE;
   private signalHandlersInstalled = false;
+  private lastSessionId: string | null = null;
 
   constructor(options: OrchestratorOptions = {}) {
     super();
     this.runnerFactory = options.runnerFactory;
   }
 
-  getState(): AgentState {
-    return this.state;
+  getState(sessionId?: string): AgentState {
+    const resolvedId = sessionId ?? this.lastSessionId;
+    if (!resolvedId) {
+      return AgentState.IDLE;
+    }
+    return this.sessions.get(resolvedId)?.getState() ?? AgentState.IDLE;
   }
 
-  getSession(): WorkflowSession | null {
-    return this.sessionManager?.getSession() ?? null;
+  getSession(sessionId?: string): WorkflowSession | null {
+    const resolvedId = sessionId ?? this.lastSessionId;
+    if (!resolvedId) {
+      return null;
+    }
+    return this.sessions.get(resolvedId)?.getSession() ?? null;
+  }
+
+  getSessionIds(): string[] {
+    return Array.from(this.sessions.keys());
   }
 
   connect(
@@ -72,38 +97,66 @@ export class Orchestrator extends EventEmitter {
   }
 
   disconnect(): void {
-    this.executor?.stopAll();
-    this.executor?.removeAllListeners();
-    this.executor = null;
-    this.sessionManager = null;
+    for (const controller of this.sessions.values()) {
+      this.detachSessionEvents(controller);
+      controller.dispose();
+    }
+    this.sessions.clear();
+    this.sessionListeners.clear();
     this.defaultAdapter = null;
-    this.setState(AgentState.IDLE);
+    this.lastSessionId = null;
+  }
+
+  createSession(goal: string, options: ExecuteWorkflowOptions = {}): string {
+    return this.startSession(goal, options);
+  }
+
+  startSession(goal: string, options: ExecuteWorkflowOptions = {}): string {
+    if (!goal.trim()) {
+      throw new Error('Session goal is required.');
+    }
+
+    const controller = this.createSessionController(goal, options);
+    return controller.sessionId;
+  }
+
+  stopSession(sessionId: string): void {
+    const controller = this.sessions.get(sessionId);
+    if (!controller) {
+      throw new Error('No active session.');
+    }
+
+    controller.stopAll();
+  }
+
+  removeSession(sessionId: string): void {
+    const controller = this.sessions.get(sessionId);
+    if (!controller) {
+      return;
+    }
+
+    this.detachSessionEvents(controller);
+    controller.dispose();
+    this.sessions.delete(sessionId);
+    this.sessionListeners.delete(sessionId);
+    if (this.lastSessionId === sessionId) {
+      this.lastSessionId = null;
+    }
   }
 
   async executeWorkflow(
     workflow: WorkflowDefinition,
     options: ExecuteWorkflowOptions = {},
   ): Promise<WorkflowSession> {
-    if (this.executor?.hasActiveRunners()) {
-      throw new Error('Orchestrator is already running a workflow.');
-    }
-
     const goal = workflow.goal ?? workflow.id;
-    const sessionOptions = {
-      ...(options.baseDir ? { baseDir: options.baseDir } : {}),
-    };
-    this.sessionManager = options.sessionId
-      ? SessionManager.load(options.sessionId, sessionOptions)
-      : SessionManager.create(goal, sessionOptions);
+    const controller = options.sessionId
+      ? this.getOrLoadSessionController(options.sessionId, options)
+      : this.createSessionController(goal, options);
 
-    this.executor?.removeAllListeners();
-    this.executor = new WorkflowExecutor(this.sessionManager, {
-      ...(this.runnerFactory ? { runnerFactory: this.runnerFactory } : {}),
-    });
-    this.attachExecutorEvents(this.executor);
     this.installSignalHandlers();
+    this.lastSessionId = controller.sessionId;
 
-    return this.executor.executeWorkflow(workflow);
+    return controller.executeWorkflow(workflow);
   }
 
   startTask(goal: string): void {
@@ -142,75 +195,128 @@ export class Orchestrator extends EventEmitter {
     };
 
     void this.executeWorkflow(workflow).catch((error) => {
-      this.setState(AgentState.ERROR);
       this.emit('error', error);
     });
   }
 
-  submitInteraction(taskId: string, input: string): void {
-    if (!this.executor) {
+  submitInteraction(sessionId: string, taskId: string, input: string): void {
+    const controller = this.sessions.get(sessionId);
+    if (!controller) {
       throw new Error('No active session.');
     }
 
-    this.executor.submitInteraction(taskId, input);
+    controller.submitInteraction(taskId, input);
   }
 
-  resizeTask(taskId: string, cols: number, rows: number): void {
-    if (!this.executor) {
+  resizeTask(sessionId: string, taskId: string, cols: number, rows: number): void {
+    const controller = this.sessions.get(sessionId);
+    if (!controller) {
       return;
     }
 
-    this.executor.resizeTask(taskId, cols, rows);
+    controller.resizeTask(taskId, cols, rows);
   }
 
-  completeTask(taskId: string): void {
-    if (!this.executor) {
+  completeTask(sessionId: string, taskId: string): void {
+    const controller = this.sessions.get(sessionId);
+    if (!controller) {
       throw new Error('No active session.');
     }
 
-    this.executor.completeTask(taskId);
+    controller.completeTask(taskId);
   }
 
-  private attachExecutorEvents(executor: WorkflowExecutor): void {
-    executor.on('stateChange', (payload: OrchestratorStateChange) => {
-      this.state = payload.to;
-      this.emit('stateChange', payload);
-    });
-
-    executor.on('taskStatusChange', (payload) => {
-      this.emit('taskStatusChange', payload);
-    });
-
-    executor.on('interactionNeeded', (payload) => {
-      this.emit('interactionNeeded', payload);
-    });
-
-    executor.on('agentEvent', (payload) => {
-      this.emit('agentEvent', payload);
-    });
-
-    executor.on('taskOutput', (payload) => {
-      this.emit('taskOutput', payload);
-    });
-
-    executor.on('error', (error) => {
-      this.emit('error', error);
-    });
-  }
-
-  private setState(next: AgentState): void {
-    if (this.state === next) {
-      return;
-    }
-
-    const previous = this.state;
-    this.state = next;
-    const payload: OrchestratorStateChange = {
-      from: previous,
-      to: next,
-      session: this.sessionManager?.getSession() ?? null,
+  private createSessionController(
+    goal: string,
+    options: ExecuteWorkflowOptions,
+  ): SessionController {
+    const sessionOptions = {
+      ...(options.baseDir ? { baseDir: options.baseDir } : {}),
     };
-    this.emit('stateChange', payload);
+    const sessionManager = SessionManager.create(goal, sessionOptions);
+    return this.registerSession(
+      new SessionController(sessionManager, {
+        ...(this.runnerFactory ? { runnerFactory: this.runnerFactory } : {}),
+      }),
+    );
+  }
+
+  private getOrLoadSessionController(
+    sessionId: string,
+    options: ExecuteWorkflowOptions,
+  ): SessionController {
+    const existing = this.sessions.get(sessionId);
+    if (existing) {
+      return existing;
+    }
+
+    const sessionOptions = {
+      ...(options.baseDir ? { baseDir: options.baseDir } : {}),
+    };
+    const sessionManager = SessionManager.load(sessionId, sessionOptions);
+    return this.registerSession(
+      new SessionController(sessionManager, {
+        ...(this.runnerFactory ? { runnerFactory: this.runnerFactory } : {}),
+      }),
+    );
+  }
+
+  private registerSession(controller: SessionController): SessionController {
+    this.sessions.set(controller.sessionId, controller);
+    this.lastSessionId = controller.sessionId;
+    this.attachSessionEvents(controller);
+    return controller;
+  }
+
+  private attachSessionEvents(controller: SessionController): void {
+    if (this.sessionListeners.has(controller.sessionId)) {
+      return;
+    }
+
+    const listeners: SessionListenerSet = {
+      stateChange: (payload) => {
+        this.emit('stateChange', payload);
+      },
+      taskStatusChange: (payload) => {
+        this.emit('taskStatusChange', payload);
+      },
+      interactionNeeded: (payload) => {
+        this.emit('interactionNeeded', payload);
+      },
+      agentEvent: (payload) => {
+        this.emit('agentEvent', payload);
+      },
+      taskOutput: (payload) => {
+        this.emit('taskOutput', payload);
+      },
+      error: (error) => {
+        this.emit('error', error);
+      },
+    };
+
+    controller.on('stateChange', listeners.stateChange);
+    controller.on('taskStatusChange', listeners.taskStatusChange);
+    controller.on('interactionNeeded', listeners.interactionNeeded);
+    controller.on('agentEvent', listeners.agentEvent);
+    controller.on('taskOutput', listeners.taskOutput);
+    controller.on('error', listeners.error);
+
+    this.sessionListeners.set(controller.sessionId, listeners);
+  }
+
+  private detachSessionEvents(controller: SessionController): void {
+    const listeners = this.sessionListeners.get(controller.sessionId);
+    if (!listeners) {
+      return;
+    }
+
+    controller.removeListener('stateChange', listeners.stateChange);
+    controller.removeListener('taskStatusChange', listeners.taskStatusChange);
+    controller.removeListener('interactionNeeded', listeners.interactionNeeded);
+    controller.removeListener('agentEvent', listeners.agentEvent);
+    controller.removeListener('taskOutput', listeners.taskOutput);
+    controller.removeListener('error', listeners.error);
+    this.sessionListeners.delete(controller.sessionId);
   }
 
   private installSignalHandlers(): void {
@@ -220,13 +326,14 @@ export class Orchestrator extends EventEmitter {
 
     this.signalHandlersInstalled = true;
     const handler = (signal: NodeJS.Signals) => {
-      try {
-        this.sessionManager?.persist();
-      } catch (error) {
-        this.emit('error', error);
+      for (const controller of this.sessions.values()) {
+        try {
+          controller.persist();
+        } catch (error) {
+          this.emit('error', error);
+        }
+        controller.stopAll();
       }
-      this.executor?.stopAll();
-      this.setState(AgentState.IDLE);
       const exitCode = signal === 'SIGINT' ? 130 : 143;
       process.exit(exitCode);
     };

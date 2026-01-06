@@ -28,16 +28,18 @@ const terminalTheme = {
 } as const;
 
 type XTermTerminalProps = {
+  sessionId: string;
   taskId: string;
   active: boolean;
   canInteract: boolean;
   readOnly?: boolean;
-  onInteractionSubmitted: (taskId: string) => void;
+  onInteractionSubmitted: (sessionId: string, taskId: string) => void;
 };
 
 const EMPTY_OUTPUT: string[] = [];
 
 export const XTermTerminal = ({
+  sessionId,
   taskId,
   active,
   canInteract,
@@ -45,11 +47,12 @@ export const XTermTerminal = ({
   onInteractionSubmitted,
 }: XTermTerminalProps) => {
   const executionMode = useAppStore(
-    (state) => state.taskMeta[taskId]?.executionMode ?? 'interactive'
+    (state) =>
+      state.sessions[sessionId]?.taskMeta[taskId]?.executionMode ?? 'interactive'
   );
   const output =
     useAppStore((state) => {
-      const entry = state.taskOutputs[taskId];
+      const entry = state.sessions[sessionId]?.taskOutputs[taskId];
       if (!entry) {
         return EMPTY_OUTPUT;
       }
@@ -105,8 +108,8 @@ export const XTermTerminal = ({
         return;
       }
 
-      void ipcClient.task.interact(taskId, data).catch(() => undefined);
-      interactionRef.current(taskId);
+      void ipcClient.task.interact(sessionId, taskId, data).catch(() => undefined);
+      interactionRef.current(sessionId, taskId);
     });
 
     const resizeDisposable = terminal.onResize(({ cols, rows }) => {
@@ -114,7 +117,7 @@ export const XTermTerminal = ({
         return;
       }
 
-      void ipcClient.task.resize(taskId, cols, rows).catch(() => undefined);
+      void ipcClient.task.resize(sessionId, taskId, cols, rows).catch(() => undefined);
     });
 
     const resizeObserver = new ResizeObserver(() => {
@@ -133,7 +136,7 @@ export const XTermTerminal = ({
       terminalRef.current = null;
       fitAddonRef.current = null;
     };
-  }, [taskId]);
+  }, [sessionId, taskId]);
 
   useEffect(() => {
     const terminal = terminalRef.current;
@@ -178,7 +181,7 @@ export const XTermTerminal = ({
     if (readOnly) {
       return;
     }
-    void ipcClient.task.complete(taskId).catch(() => undefined);
+    void ipcClient.task.complete(sessionId, taskId).catch(() => undefined);
   };
 
   return (
@@ -191,7 +194,7 @@ export const XTermTerminal = ({
       <div className="relative flex-1 min-h-0 p-4 pb-0">
         <div ref={containerRef} className="h-full w-full" />
       </div>
-      
+
       {!isHeadless && !readOnly && (
         <div className="flex items-center justify-between border-t border-white/5 bg-[#292f39] px-4 py-2 text-xs text-[#e2e8f0]">
           <span className="opacity-50">When this task has finished running, click —&gt;</span>

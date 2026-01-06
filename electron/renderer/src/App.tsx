@@ -1,140 +1,166 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { DashboardLayout } from './components/dashboard/DashboardLayout';
+import { NewWorkflowColumn } from './components/dashboard/NewWorkflowColumn';
+import { WorkflowColumn } from './components/dashboard/WorkflowColumn';
 import { Header } from './components/layout/Header';
-import { MainLayout } from './components/layout/MainLayout';
-import { Sidebar } from './components/layout/Sidebar';
-import { TerminalTabs } from './components/terminal/TerminalTabs';
-import { XTermTerminal } from './components/terminal/XTermTerminal';
-import { useAppStore } from './stores/app-store';
+import { ipcClient } from './lib/ipc-client';
+import { type SessionLayout, useAppStore } from './stores/app-store';
 import { connectIpcToStore } from './stores/ipc-sync';
 
 export default function App() {
-  const orchestratorState = useAppStore((state) => state.orchestratorState);
-  const sessionId = useAppStore((state) => state.sessionId);
-  const sessionMode = useAppStore((state) => state.sessionMode);
-  const workflowStages = useAppStore((state) => state.workflowStages);
-  const taskStatuses = useAppStore((state) => state.taskStatuses);
-  const taskMeta = useAppStore((state) => state.taskMeta);
-  const pendingInteractions = useAppStore((state) => state.pendingInteractions);
-  const activeTaskId = useAppStore((state) => state.activeTaskId);
+  const activeSessionIds = useAppStore((state) => state.activeSessionIds);
+  const sessions = useAppStore((state) => state.sessions);
+  const setSessionLayout = useAppStore((state) => state.setSessionLayout);
   const setActiveTaskId = useAppStore((state) => state.setActiveTaskId);
   const resolveInteraction = useAppStore((state) => state.resolveInteraction);
+  const removeSession = useAppStore((state) => state.removeSession);
+
+  const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null);
+  const columnRefs = useRef(new Map<string, HTMLDivElement | null>());
+  const newWorkflowRef = useRef<HTMLDivElement | null>(null);
+  const [highlightedSessionId, setHighlightedSessionId] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     const cleanup = connectIpcToStore();
     return cleanup;
   }, []);
 
-  const taskIds = useMemo(() => {
-    const ordered: string[] = [];
-    const seen = new Set<string>();
+  const registerColumnRef = useCallback((sessionId: string, node: HTMLDivElement | null) => {
+    if (node) {
+      columnRefs.current.set(sessionId, node);
+      return;
+    }
+    columnRefs.current.delete(sessionId);
+  }, []);
 
-    if (workflowStages.length > 0) {
-      workflowStages.forEach((stage) => {
-        stage.taskIds.forEach((taskId) => {
-          if (seen.has(taskId)) {
-            return;
-          }
-          seen.add(taskId);
-          ordered.push(taskId);
-        });
-      });
+  const attentionSessionIds = useMemo(() => {
+    return activeSessionIds.filter((sessionId) => {
+      const session = sessions[sessionId];
+      if (!session) {
+        return false;
+      }
+      const hasPending = session.pendingInteractions.length > 0;
+      const hasError = Object.values(session.taskStatuses).includes('ERROR');
+      return hasPending || hasError;
+    });
+  }, [activeSessionIds, sessions]);
+
+  const notificationCount = useMemo(() => {
+    return attentionSessionIds.reduce((total, sessionId) => {
+      const session = sessions[sessionId];
+      if (!session) {
+        return total;
+      }
+      const pending = session.pendingInteractions.length;
+      const hasError = Object.values(session.taskStatuses).includes('ERROR');
+      return total + pending + (hasError ? 1 : 0);
+    }, 0);
+  }, [attentionSessionIds, sessions]);
+
+  const handleNotificationClick = useCallback(() => {
+    const targetSessionId = attentionSessionIds[0];
+    if (!targetSessionId) {
+      return;
     }
 
-    Object.keys(taskStatuses).forEach((taskId) => {
-      if (seen.has(taskId)) {
-        return;
-      }
-      seen.add(taskId);
-      ordered.push(taskId);
-    });
+    const node = columnRefs.current.get(targetSessionId);
+    node?.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+    setHighlightedSessionId(targetSessionId);
+    window.setTimeout(() => setHighlightedSessionId(null), 1400);
+  }, [attentionSessionIds]);
 
-    pendingInteractions.forEach((interaction) => {
-      if (seen.has(interaction.taskId)) {
-        return;
-      }
-      seen.add(interaction.taskId);
-      ordered.push(interaction.taskId);
-    });
+  const setScrollRef = useCallback((node: HTMLDivElement | null) => {
+    setScrollRoot((current) => (current === node ? current : node));
+  }, []);
 
-    return ordered;
-  }, [pendingInteractions, taskStatuses, workflowStages]);
-  const attentionTaskIds = useMemo(
-    () => new Set(pendingInteractions.map((interaction) => interaction.taskId)),
-    [pendingInteractions]
+  const handleNewWorkflow = useCallback(() => {
+    newWorkflowRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      inline: 'start',
+      block: 'nearest',
+    });
+  }, []);
+
+  const handleSelectTask = useCallback(
+    (sessionId: string, taskId: string) => {
+      setActiveTaskId(sessionId, taskId);
+    },
+    [setActiveTaskId]
   );
 
-  useEffect(() => {
-    if (!activeTaskId && taskIds.length > 0) {
-      setActiveTaskId(taskIds[0]);
-    }
-  }, [activeTaskId, setActiveTaskId, taskIds]);
+  const handleLayoutChange = useCallback(
+    (sessionId: string, layout: SessionLayout) => {
+      setSessionLayout(sessionId, layout);
+    },
+    [setSessionLayout]
+  );
 
-  const resolvedActiveTaskId = activeTaskId ?? taskIds[0] ?? null;
-  const sidebarStages = useMemo(() => {
-    if (workflowStages.length > 0) {
-      return workflowStages;
-    }
-    if (taskIds.length === 0) {
-      return [];
-    }
-    return [{ id: 'workflow', index: 0, taskIds }];
-  }, [taskIds, workflowStages]);
+  const handleInteractionSubmitted = useCallback(
+    (sessionId: string, taskId: string) => {
+      resolveInteraction(sessionId, taskId);
+    },
+    [resolveInteraction]
+  );
+
+  const handleCloseSession = useCallback(
+    (sessionId: string) => {
+      const session = sessions[sessionId];
+      if (!session) {
+        return;
+      }
+
+      const isBusy =
+        session.orchestratorState === 'RUNNING' ||
+        session.orchestratorState === 'AWAITING_INTERACTION';
+      if (isBusy) {
+        const confirmed = window.confirm('Stop this workflow and close the column?');
+        if (!confirmed) {
+          return;
+        }
+      }
+
+      void ipcClient.workflow.stop(sessionId).catch(() => undefined);
+      removeSession(sessionId);
+    },
+    [removeSession, sessions]
+  );
 
   return (
-    <MainLayout
+    <DashboardLayout
       header={
         <Header
-          orchestratorState={orchestratorState}
-          sessionId={sessionId}
+          activeCount={activeSessionIds.length}
+          notificationCount={notificationCount}
+          onNotificationClick={handleNotificationClick}
+          onNewWorkflow={handleNewWorkflow}
         />
       }
-      sidebar={
-        <Sidebar
-          stages={sidebarStages}
-          taskMeta={taskMeta}
-          taskStatuses={taskStatuses}
-          activeTaskId={resolvedActiveTaskId}
-          pendingCount={pendingInteractions.length}
-          onSelectTask={setActiveTaskId}
-        />
-      }
+      scrollRef={setScrollRef}
     >
-      {taskIds.length === 0 ? (
-        <div className="flex flex-1 items-center justify-center rounded-2xl border border-border bg-ink/50">
-          <span className="text-sm text-ash">No active tasks</span>
-        </div>
-      ) : (
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-slate/70">
-          <TerminalTabs
-            tabs={taskIds.map((taskId) => ({
-              id: taskId,
-              label: taskMeta[taskId]?.label ?? taskId,
-              isActive: taskId === resolvedActiveTaskId,
-              needsAttention:
-                attentionTaskIds.has(taskId) ||
-                taskStatuses[taskId] === 'WAITING_FOR_USER',
-            }))}
-            onSelect={setActiveTaskId}
+      {activeSessionIds.map((sessionId) => {
+        const session = sessions[sessionId];
+        if (!session) {
+          return null;
+        }
+        return (
+          <WorkflowColumn
+            key={sessionId}
+            session={session}
+            scrollRoot={scrollRoot}
+            isHighlighted={sessionId === highlightedSessionId}
+            onLayoutChange={handleLayoutChange}
+            onSelectTask={handleSelectTask}
+            onClose={handleCloseSession}
+            onInteractionSubmitted={handleInteractionSubmitted}
+            registerRef={registerColumnRef}
           />
-          <div className="relative flex-1 min-h-0 bg-ink/60">
-            {taskIds.map((taskId) => (
-              <XTermTerminal
-                key={taskId}
-                taskId={taskId}
-                active={taskId === resolvedActiveTaskId}
-                canInteract={
-                  sessionMode === 'live' &&
-                  taskMeta[taskId]?.executionMode !== 'headless' &&
-                  (taskStatuses[taskId] === 'RUNNING' ||
-                    taskStatuses[taskId] === 'WAITING_FOR_USER')
-                }
-                readOnly={sessionMode === 'view'}
-                onInteractionSubmitted={resolveInteraction}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-    </MainLayout>
+        );
+      })}
+      <div ref={newWorkflowRef}>
+        <NewWorkflowColumn onClick={handleNewWorkflow} />
+      </div>
+    </DashboardLayout>
   );
 }

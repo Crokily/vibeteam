@@ -50,12 +50,13 @@ const handleStateChange = (payload: CoreStateChange): void => {
   sendToRenderer('orchestrator:stateChange', {
     previous: mapAgentState(payload.from),
     current: mapAgentState(payload.to),
-    sessionId: payload.session?.id ?? null,
+    sessionId: payload.sessionId ?? null,
   });
 };
 
 const handleTaskStatusChange = (payload: CoreTaskStatusChange): void => {
   sendToRenderer('orchestrator:taskStatusChange', {
+    sessionId: payload.sessionId,
     taskId: payload.taskId,
     status: mapTaskStatus(payload.status),
   });
@@ -63,6 +64,7 @@ const handleTaskStatusChange = (payload: CoreTaskStatusChange): void => {
 
 const handleTaskOutput = (payload: CoreTaskOutput): void => {
   sendToRenderer('orchestrator:taskOutput', {
+    sessionId: payload.sessionId,
     taskId: payload.taskId,
     raw: payload.raw,
     cleaned: payload.clean,
@@ -89,6 +91,7 @@ const resolveInteractionPayload = (
 const handleInteractionNeeded = (payload: OrchestratorInteraction): void => {
   const { prompt, context } = resolveInteractionPayload(payload.payload);
   sendToRenderer('orchestrator:interactionNeeded', {
+    sessionId: payload.sessionId,
     taskId: payload.taskId,
     ...(prompt ? { prompt } : {}),
     ...(context ? { context } : {}),
