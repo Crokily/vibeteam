@@ -37,4 +37,39 @@ describe('SessionManager', () => {
       true,
     );
   });
+
+  it('persists and loads workflow definition', () => {
+    const workflow: any = {
+      id: 'test-wf',
+      goal: 'test goal',
+      stages: [
+        {
+          id: 's1',
+          tasks: [
+            {
+              id: 't1',
+              adapter: 'gemini', // Using a valid string, though type checking might be loose here in tests
+              prompt: 'do something',
+            },
+          ],
+        },
+      ],
+    };
+
+    const manager = SessionManager.create('goal', { baseDir: TEST_DIR });
+    manager.initializeWorkflow(workflow);
+    manager.persist();
+
+    const loaded = SessionManager.load(manager.getSession().id, {
+      baseDir: TEST_DIR,
+    });
+    const loadedSession = loaded.getSession();
+
+    expect(loadedSession.workflowDefinition).toBeDefined();
+    expect(loadedSession.workflowDefinition?.id).toBe(workflow.id);
+    expect(loadedSession.workflowDefinition?.stages).toHaveLength(1);
+    expect(loadedSession.workflowDefinition?.stages[0].tasks[0].prompt).toBe(
+      'do something',
+    );
+  });
 });

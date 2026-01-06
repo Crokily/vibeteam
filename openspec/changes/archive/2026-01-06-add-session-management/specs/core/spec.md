@@ -13,14 +13,18 @@ The system SHALL persist the session state, including the workflow definition, t
 - **THEN** the system accepts an optional `baseDir` parameter
 - **AND** session files are stored relative to this directory (e.g., `baseDir/.vibeteam/sessions`)
 
+#### Scenario: Base Dir Propagation
+- **WHEN** `Orchestrator.executeWorkflow` is called with `baseDir`
+- **THEN** the created or loaded `SessionManager` uses this directory for persistence
+
+## ADDED Requirements
+
 ### Requirement: Orchestrator Execution Options
 The system SHALL allow configuring the storage location for workflow executions.
 
 #### Scenario: Base Dir Propagation
 - **WHEN** `Orchestrator.executeWorkflow` is called with `baseDir`
 - **THEN** the created or loaded `SessionManager` uses this directory for persistence
-
-## ADDED Requirements
 
 ### Requirement: Session Management IPC
 The system SHALL provide IPC commands to list, load, and resume sessions.
