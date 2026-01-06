@@ -1,5 +1,9 @@
 import type { AppConfig } from '../../../shared/config';
-import type { WorkflowDefinition } from '../../../shared/ipc-types';
+import type {
+  SessionSummary,
+  WorkflowDefinition,
+  WorkflowSessionSnapshot,
+} from '../../../shared/ipc-types';
 
 const getApi = () => {
   if (!window.electronAPI) {
@@ -20,6 +24,15 @@ export const ipcClient = {
     resize: (taskId: string, cols: number, rows: number) =>
       getApi().task.resize(taskId, cols, rows),
     complete: (taskId: string) => getApi().task.complete(taskId),
+  },
+  session: {
+    list: (): Promise<SessionSummary[]> => getApi().session.list(),
+    load: (sessionId: string): Promise<WorkflowSessionSnapshot> =>
+      getApi().session.load(sessionId),
+    resume: (sessionId: string): Promise<string> =>
+      getApi().session.resume(sessionId),
+    delete: (sessionId: string): Promise<void> =>
+      getApi().session.delete(sessionId),
   },
   config: {
     get: <K extends keyof AppConfig>(key: K) => getApi().config.get(key),

@@ -10,6 +10,7 @@ import { connectIpcToStore } from './stores/ipc-sync';
 export default function App() {
   const orchestratorState = useAppStore((state) => state.orchestratorState);
   const sessionId = useAppStore((state) => state.sessionId);
+  const sessionMode = useAppStore((state) => state.sessionMode);
   const workflowStages = useAppStore((state) => state.workflowStages);
   const taskStatuses = useAppStore((state) => state.taskStatuses);
   const taskMeta = useAppStore((state) => state.taskMeta);
@@ -122,10 +123,12 @@ export default function App() {
                 taskId={taskId}
                 active={taskId === resolvedActiveTaskId}
                 canInteract={
+                  sessionMode === 'live' &&
                   taskMeta[taskId]?.executionMode !== 'headless' &&
                   (taskStatuses[taskId] === 'RUNNING' ||
                     taskStatuses[taskId] === 'WAITING_FOR_USER')
                 }
+                readOnly={sessionMode === 'view'}
                 onInteractionSubmitted={resolveInteraction}
               />
             ))}

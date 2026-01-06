@@ -43,6 +43,7 @@ export class SessionManager {
   }
 
   initializeWorkflow(workflow: WorkflowDefinition): void {
+    this.session.workflowDefinition = workflow;
     for (const stage of workflow.stages) {
       for (const task of stage.tasks) {
         this.ensureTask(task.id);

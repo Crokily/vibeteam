@@ -59,6 +59,30 @@ export const orchestratorStateSchema = z.enum(orchestratorStateValues);
 export const taskStatusSchema = z.enum(taskStatusValues);
 export const taskOutputStreamSchema = z.enum(taskOutputStreamValues);
 
+export const workflowSessionSnapshotSchema = z
+  .object({
+    id: z.string(),
+    goal: z.string(),
+    startTime: z.string(),
+    currentStageIndex: z.number().int().min(0),
+    taskStatus: z.record(taskStatusSchema),
+    logs: z.record(z.array(z.string())),
+    history: z.array(z.string()),
+    workflowDefinition: workflowDefinitionSchema.optional(),
+  })
+  .strict();
+
+export const sessionSummarySchema = z
+  .object({
+    id: z.string(),
+    goal: z.string(),
+    status: taskStatusSchema,
+    startedAt: z.string(),
+    updatedAt: z.string(),
+    hasWorkflowDefinition: z.boolean(),
+  })
+  .strict();
+
 export const orchestratorStateChangeSchema = z
   .object({
     previous: orchestratorStateSchema,
@@ -112,6 +136,10 @@ export const ipcCommandSchemas = {
   'task:interact': z.tuple([z.string(), z.string()]),
   'task:resize': z.tuple([z.string(), z.number().int().min(1), z.number().int().min(1)]),
   'task:complete': z.tuple([z.string()]),
+  'session:list': z.tuple([]),
+  'session:load': z.tuple([z.string()]),
+  'session:resume': z.tuple([z.string()]),
+  'session:delete': z.tuple([z.string()]),
   'config:get': z.tuple([appConfigKeySchema]),
   'config:set': z.tuple([appConfigKeySchema, z.unknown()]),
 } as const;

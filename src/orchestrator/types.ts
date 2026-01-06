@@ -31,6 +31,7 @@ export type WorkflowDefinition = {
 
 export type ExecuteWorkflowOptions = {
   sessionId?: string;
+  baseDir?: string;
 };
 
 export type AgentRunnerLike = {

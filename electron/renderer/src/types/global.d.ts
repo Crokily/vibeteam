@@ -2,7 +2,9 @@ import type { AppConfig } from '../../../shared/config';
 import type {
   IpcEventChannel,
   IpcEvents,
+  SessionSummary,
   WorkflowDefinition,
+  WorkflowSessionSnapshot,
 } from '../../../shared/ipc-types';
 
 type EventListener<E extends IpcEventChannel> = (payload: IpcEvents[E]) => void;
@@ -18,6 +20,12 @@ declare global {
         interact: (taskId: string, input: string) => Promise<void>;
         resize: (taskId: string, cols: number, rows: number) => Promise<void>;
         complete: (taskId: string) => Promise<void>;
+      };
+      session: {
+        list: () => Promise<SessionSummary[]>;
+        load: (sessionId: string) => Promise<WorkflowSessionSnapshot>;
+        resume: (sessionId: string) => Promise<string>;
+        delete: (sessionId: string) => Promise<void>;
       };
       config: {
         get: <K extends keyof AppConfig>(key: K) => Promise<AppConfig[K]>;

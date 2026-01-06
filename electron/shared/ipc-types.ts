@@ -25,6 +25,17 @@ export type WorkflowDefinition = {
   stages: WorkflowStage[];
 };
 
+export type WorkflowSessionSnapshot = {
+  id: string;
+  goal: string;
+  startTime: string;
+  currentStageIndex: number;
+  taskStatus: Record<string, TaskStatus>;
+  logs: Record<string, string[]>;
+  history: string[];
+  workflowDefinition?: WorkflowDefinition;
+};
+
 export type OrchestratorState =
   | 'IDLE'
   | 'RUNNING'
@@ -38,6 +49,15 @@ export type TaskStatus =
   | 'WAITING_FOR_USER'
   | 'DONE'
   | 'ERROR';
+
+export type SessionSummary = {
+  id: string;
+  goal: string;
+  status: TaskStatus;
+  startedAt: string;
+  updatedAt: string;
+  hasWorkflowDefinition: boolean;
+};
 
 export type TaskOutputStream = 'stdout' | 'stderr';
 
@@ -82,6 +102,10 @@ export type IpcCommands = {
   'task:interact': (taskId: string, input: string) => Promise<void>;
   'task:resize': (taskId: string, cols: number, rows: number) => Promise<void>;
   'task:complete': (taskId: string) => Promise<void>;
+  'session:list': () => Promise<SessionSummary[]>;
+  'session:load': (sessionId: string) => Promise<WorkflowSessionSnapshot>;
+  'session:resume': (sessionId: string) => Promise<string>;
+  'session:delete': (sessionId: string) => Promise<void>;
   'config:get': <K extends keyof AppConfig>(key: K) => Promise<AppConfig[K]>;
   'config:set': <K extends keyof AppConfig>(key: K, value: AppConfig[K]) => Promise<void>;
 };

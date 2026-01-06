@@ -1,4 +1,5 @@
 import type { OrchestratorState } from '../../../../shared/ipc-types';
+import { SessionList } from '../session/SessionList';
 
 const statusStyles: Record<OrchestratorState, string> = {
   IDLE: 'border-border text-ash bg-ink/60',
@@ -17,9 +18,7 @@ export const Header = ({ orchestratorState, sessionId }: HeaderProps) => {
   return (
     <header className="flex flex-col gap-4 rounded-3xl border border-border bg-slate/70 px-6 py-4 backdrop-blur lg:flex-row lg:items-center lg:justify-between">
       <div className="flex flex-wrap items-center gap-3">
-        <button className="rounded-full border border-border bg-ink/60 px-4 py-2 text-xs uppercase tracking-[0.3em] text-ash transition hover:border-iron hover:text-iron">
-          Sessions
-        </button>
+        <SessionList />
         <button className="rounded-full border border-border bg-ink/60 px-4 py-2 text-xs uppercase tracking-[0.3em] text-ash transition hover:border-iron hover:text-iron">
           New
         </button>

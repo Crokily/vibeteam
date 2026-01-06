@@ -1,7 +1,13 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { IpcRendererEvent } from 'electron';
 import type { AppConfig } from '../shared/config';
-import type { IpcEventChannel, IpcEvents, WorkflowDefinition } from '../shared/ipc-types';
+import type {
+  IpcEventChannel,
+  IpcEvents,
+  SessionSummary,
+  WorkflowDefinition,
+  WorkflowSessionSnapshot,
+} from '../shared/ipc-types';
 
 type EventListener<E extends IpcEventChannel> = (payload: IpcEvents[E]) => void;
 type Unsubscribe = () => void;
@@ -19,6 +25,15 @@ const electronAPI = {
       ipcRenderer.invoke('task:resize', taskId, cols, rows) as Promise<void>,
     complete: (taskId: string) =>
       ipcRenderer.invoke('task:complete', taskId) as Promise<void>,
+  },
+  session: {
+    list: () => ipcRenderer.invoke('session:list') as Promise<SessionSummary[]>,
+    load: (sessionId: string) =>
+      ipcRenderer.invoke('session:load', sessionId) as Promise<WorkflowSessionSnapshot>,
+    resume: (sessionId: string) =>
+      ipcRenderer.invoke('session:resume', sessionId) as Promise<string>,
+    delete: (sessionId: string) =>
+      ipcRenderer.invoke('session:delete', sessionId) as Promise<void>,
   },
   config: {
     get: <K extends keyof AppConfig>(key: K) =>

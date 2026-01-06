@@ -89,9 +89,12 @@ export class Orchestrator extends EventEmitter {
     }
 
     const goal = workflow.goal ?? workflow.id;
+    const sessionOptions = {
+      ...(options.baseDir ? { baseDir: options.baseDir } : {}),
+    };
     this.sessionManager = options.sessionId
-      ? SessionManager.load(options.sessionId)
-      : SessionManager.create(goal);
+      ? SessionManager.load(options.sessionId, sessionOptions)
+      : SessionManager.create(goal, sessionOptions);
 
     this.executor?.removeAllListeners();
     this.executor = new WorkflowExecutor(this.sessionManager, {

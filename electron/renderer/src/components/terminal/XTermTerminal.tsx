@@ -31,6 +31,7 @@ type XTermTerminalProps = {
   taskId: string;
   active: boolean;
   canInteract: boolean;
+  readOnly?: boolean;
   onInteractionSubmitted: (taskId: string) => void;
 };
 
@@ -40,6 +41,7 @@ export const XTermTerminal = ({
   taskId,
   active,
   canInteract,
+  readOnly = false,
   onInteractionSubmitted,
 }: XTermTerminalProps) => {
   const executionMode = useAppStore(
@@ -60,11 +62,16 @@ export const XTermTerminal = ({
   const outputIndexRef = useRef(0);
   const executionModeRef = useRef(executionMode);
   const canInteractRef = useRef(canInteract);
+  const readOnlyRef = useRef(readOnly);
   const interactionRef = useRef(onInteractionSubmitted);
 
   useEffect(() => {
     canInteractRef.current = canInteract;
   }, [canInteract]);
+
+  useEffect(() => {
+    readOnlyRef.current = readOnly;
+  }, [readOnly]);
 
   useEffect(() => {
     interactionRef.current = onInteractionSubmitted;
@@ -82,7 +89,7 @@ export const XTermTerminal = ({
       fontFamily:
         '"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
       convertEol: isHeadless,
-      disableStdin: isHeadless,
+      disableStdin: isHeadless || readOnly,
       scrollback: 5000,
       theme: terminalTheme,
       allowTransparency: false,
@@ -94,7 +101,7 @@ export const XTermTerminal = ({
     fitAddon.fit();
 
     const inputDisposable = terminal.onData((data) => {
-      if (!canInteractRef.current || !window.electronAPI) {
+      if (!canInteractRef.current || readOnlyRef.current || !window.electronAPI) {
         return;
       }
 
@@ -103,7 +110,7 @@ export const XTermTerminal = ({
     });
 
     const resizeDisposable = terminal.onResize(({ cols, rows }) => {
-      if (!window.electronAPI) {
+      if (!window.electronAPI || readOnlyRef.current) {
         return;
       }
 
@@ -138,10 +145,11 @@ export const XTermTerminal = ({
     if (modeChanged) {
       executionModeRef.current = executionMode;
       terminal.options.convertEol = isHeadless;
-      terminal.options.disableStdin = isHeadless;
       terminal.reset();
       outputIndexRef.current = 0;
     }
+
+    terminal.options.disableStdin = isHeadless || readOnly;
 
     if (output.length < outputIndexRef.current) {
       terminal.reset();
@@ -155,7 +163,7 @@ export const XTermTerminal = ({
       }
       outputIndexRef.current = output.length;
     }
-  }, [executionMode, isHeadless, output]);
+  }, [executionMode, isHeadless, output, readOnly]);
 
   useEffect(() => {
     if (!active) {
@@ -167,6 +175,9 @@ export const XTermTerminal = ({
   }, [active]);
 
   const handleComplete = () => {
+    if (readOnly) {
+      return;
+    }
     void ipcClient.task.complete(taskId).catch(() => undefined);
   };
 
@@ -181,7 +192,7 @@ export const XTermTerminal = ({
         <div ref={containerRef} className="h-full w-full" />
       </div>
       
-      {!isHeadless && (
+      {!isHeadless && !readOnly && (
         <div className="flex items-center justify-between border-t border-white/5 bg-[#292f39] px-4 py-2 text-xs text-[#e2e8f0]">
           <span className="opacity-50">When this task has finished running, click —&gt;</span>
           <button

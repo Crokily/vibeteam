@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import type { WorkflowDefinition } from '../types';
 
 export type TaskStatus =
   | 'PENDING'
@@ -15,6 +16,7 @@ export type WorkflowSessionSnapshot = {
   taskStatus: Record<string, TaskStatus>;
   logs: Record<string, string[]>;
   history: string[];
+  workflowDefinition?: WorkflowDefinition;
 };
 
 const TASK_STATUSES: ReadonlySet<TaskStatus> = new Set([
@@ -33,6 +35,7 @@ export class WorkflowSession {
   readonly goal: string;
   readonly startTime: Date;
   readonly history: string[];
+  workflowDefinition?: WorkflowDefinition;
   currentStageIndex: number;
   readonly taskStatus: Record<string, TaskStatus>;
   readonly logs: Record<string, string[]>;
@@ -46,6 +49,7 @@ export class WorkflowSession {
       taskStatus?: Record<string, TaskStatus>;
       logs?: Record<string, string[]>;
       history?: string[];
+      workflowDefinition?: WorkflowDefinition;
     } = {},
   ) {
     this.id = options.id ?? randomUUID();
@@ -55,6 +59,7 @@ export class WorkflowSession {
     this.taskStatus = options.taskStatus ?? {};
     this.logs = options.logs ?? {};
     this.history = options.history ?? [];
+    this.workflowDefinition = options.workflowDefinition;
   }
 
   static fromSnapshot(
@@ -114,6 +119,13 @@ export class WorkflowSession {
       ? data.history.filter((entry): entry is string => typeof entry === 'string')
       : [];
 
+    const workflowDefinition =
+      isRecord(data.workflowDefinition) &&
+      typeof data.workflowDefinition.id === 'string' &&
+      Array.isArray(data.workflowDefinition.stages)
+        ? (data.workflowDefinition as WorkflowDefinition)
+        : undefined;
+
     return new WorkflowSession(goal, {
       id,
       startTime: Number.isNaN(startTime.getTime()) ? new Date() : startTime,
@@ -121,6 +133,7 @@ export class WorkflowSession {
       taskStatus,
       logs,
       history,
+      workflowDefinition,
     });
   }
 
@@ -138,6 +151,7 @@ export class WorkflowSession {
         ]),
       ),
       history: [...this.history],
+      workflowDefinition: this.workflowDefinition,
     };
   }
 }
