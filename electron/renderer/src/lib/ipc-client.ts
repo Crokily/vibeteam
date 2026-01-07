@@ -1,8 +1,10 @@
 import type { AppConfig } from '../../../shared/config';
 import type {
   AdapterMeta,
+  AgentUsageEntry,
   SessionSummary,
   WorkflowDefinition,
+  WorkflowUsageEntry,
   WorkflowSessionSnapshot,
 } from '../../../shared/ipc-types';
 
@@ -38,6 +40,12 @@ export const ipcClient = {
       getApi().session.resume(sessionId),
     delete: (sessionId: string): Promise<void> =>
       getApi().session.delete(sessionId),
+  },
+  stats: {
+    getTopWorkflows: (limit: number): Promise<WorkflowUsageEntry[]> =>
+      getApi().stats.getTopWorkflows(limit),
+    getTopAgents: (limit: number): Promise<AgentUsageEntry[]> =>
+      getApi().stats.getTopAgents(limit),
   },
   config: {
     get: <K extends keyof AppConfig>(key: K) => getApi().config.get(key),

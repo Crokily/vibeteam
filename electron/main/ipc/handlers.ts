@@ -7,14 +7,17 @@ import {
 } from '../../shared/config';
 import type {
   AdapterMeta,
+  AgentUsageEntry,
   SessionSummary,
   TaskStatus,
   WorkflowDefinition,
+  WorkflowUsageEntry,
   WorkflowSessionSnapshot,
 } from '../../shared/ipc-types';
 import { appConfigValueSchemas } from '../../shared/ipc-schemas';
 import { adapterRegistry } from '../../../src/adapters/registry';
 import { SessionManager } from '../../../src/orchestrator';
+import { UsageStatsService } from '../../../src/orchestrator/stats/UsageStatsService';
 import { getConfig, setConfig } from '../config-store';
 import { getOrchestrator } from '../orchestrator';
 import { sendIpcEvent } from './events';
@@ -22,6 +25,12 @@ import { sendIpcEvent } from './events';
 type CoreSession = ReturnType<SessionManager['getSession']>;
 
 const resolveBaseDir = (): string => app.getPath('userData');
+const usageStatsService = new UsageStatsService();
+
+const getUsageStatsService = (): UsageStatsService => {
+  usageStatsService.setBaseDir(resolveBaseDir());
+  return usageStatsService;
+};
 
 const resolveSessionStatus = (taskStatus: Record<string, TaskStatus>): TaskStatus => {
   const statuses = Object.values(taskStatus);
@@ -148,6 +157,12 @@ export const commandHandlers = {
       return;
     }
     unlinkSync(sessionPath);
+  },
+  'stats:get-top-workflows': async (limit: number): Promise<WorkflowUsageEntry[]> => {
+    return getUsageStatsService().getTopWorkflows(limit);
+  },
+  'stats:get-top-agents': async (limit: number): Promise<AgentUsageEntry[]> => {
+    return getUsageStatsService().getTopAgents(limit);
   },
   'config:get': async <K extends keyof AppConfig>(
     key: K

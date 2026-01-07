@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   AdapterMeta,
+  AgentUsageConfig,
   ExecutionMode,
   WorkflowDefinition,
 } from '../../../../shared/ipc-types';
@@ -8,6 +9,8 @@ import { workflowDefinitionSchema } from '../../../../shared/ipc-schemas';
 import { ipcClient } from '../../lib/ipc-client';
 
 import { AdapterIcon, ChevronDownIcon, ModeIcon } from './icons';
+import { FrequentAgentsBar } from './FrequentAgentsBar';
+import { FrequentWorkflowsSidebar } from './FrequentWorkflowsSidebar';
 import { WorkflowCanvas } from './WorkflowCanvas';
 import type { AgentConfig, EnvEntry, LayoutState } from './types';
 
@@ -557,6 +560,48 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
     }
   };
 
+  const handleApplyFrequentWorkflow = (definition: WorkflowDefinition) => {
+    if (layout.rows.length > 0) {
+      const confirmed = window.confirm('Replace current canvas?');
+      if (!confirmed) {
+        return;
+      }
+    }
+    setLayout(buildLayoutFromDefinition(definition));
+    setCanvasError(null);
+  };
+
+  const handleAddFrequentAgent = (config: AgentUsageConfig) => {
+    const id = `task-${createWorkflowId()}`;
+    const executionMode = config.executionMode ?? 'interactive';
+    const agent: AgentConfig = {
+      id,
+      adapter: config.adapter,
+      executionMode,
+      prompt: config.prompt ?? '',
+      extraArgs: config.extraArgs,
+      cwd: config.cwd,
+      env: config.env,
+    };
+
+    setLayout((current) => {
+      const rows = current.rows.length > 0
+        ? current.rows.map((row, index) =>
+            index === current.rows.length - 1 ? [...row, id] : row,
+          )
+        : [[id]];
+      return {
+        rows,
+        agents: {
+          ...current.agents,
+          [id]: agent,
+        },
+      };
+    });
+
+    setCanvasError(null);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 px-4 py-6 backdrop-blur">
       <div className="relative flex h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-border/70 bg-slate/90 shadow-[0_40px_120px_rgba(0,0,0,0.5)]">
@@ -617,6 +662,11 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
 
         <div className="grid min-h-0 flex-1 gap-6 overflow-hidden px-6 py-6 lg:grid-cols-[320px_minmax(0,1fr)]">
           <div className="flex min-h-0 flex-col gap-4 overflow-y-auto pr-2">
+            <FrequentWorkflowsSidebar
+              isOpen={isOpen}
+              adapterLookup={adapterDisplayLookup}
+              onSelectWorkflow={handleApplyFrequentWorkflow}
+            />
             <div className="rounded-3xl border border-border/60 bg-ink/60 px-4 py-4">
               <div className="text-[11px] uppercase tracking-[0.3em] text-ash">
                 Create Agent
@@ -886,6 +936,12 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
             </div>
           </div>
         </div>
+
+        <FrequentAgentsBar
+          isOpen={isOpen}
+          adapterLookup={adapterDisplayLookup}
+          onAddAgent={handleAddFrequentAgent}
+        />
 
         {importOpen ? (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-ink/80 px-4 py-6 backdrop-blur">

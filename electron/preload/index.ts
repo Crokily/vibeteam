@@ -3,10 +3,12 @@ import type { IpcRendererEvent } from 'electron';
 import type { AppConfig } from '../shared/config';
 import type {
   AdapterMeta,
+  AgentUsageEntry,
   IpcEventChannel,
   IpcEvents,
   SessionSummary,
   WorkflowDefinition,
+  WorkflowUsageEntry,
   WorkflowSessionSnapshot,
 } from '../shared/ipc-types';
 
@@ -45,6 +47,12 @@ const electronAPI = {
       ipcRenderer.invoke('session:resume', sessionId) as Promise<string>,
     delete: (sessionId: string) =>
       ipcRenderer.invoke('session:delete', sessionId) as Promise<void>,
+  },
+  stats: {
+    getTopWorkflows: (limit: number) =>
+      ipcRenderer.invoke('stats:get-top-workflows', limit) as Promise<WorkflowUsageEntry[]>,
+    getTopAgents: (limit: number) =>
+      ipcRenderer.invoke('stats:get-top-agents', limit) as Promise<AgentUsageEntry[]>,
   },
   config: {
     get: <K extends keyof AppConfig>(key: K) =>
