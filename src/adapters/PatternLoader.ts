@@ -6,7 +6,20 @@ export type PatternDefinition = {
   flags?: string;
 };
 
+export type AdapterMetadata = {
+  displayName: string;
+  icon: string;
+};
+
+export type PatternLoaderOptions = {
+  metadataDefaults?: AdapterMetadata;
+};
+
 export type PatternSchema = {
+  metadata?: {
+    displayName?: string;
+    icon?: string;
+  };
   states: Record<string, PatternDefinition>;
 };
 
@@ -19,14 +32,71 @@ export type CompiledPattern = {
 
 export type PatternLoadResult = {
   patterns: CompiledPattern[];
+  metadata?: AdapterMetadata;
   errors: string[];
 };
 
 const formatError = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
+const resolveMetadata = (
+  data: unknown,
+  sourceLabel: string,
+  defaults?: AdapterMetadata,
+  errors: string[] = [],
+): AdapterMetadata | undefined => {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return defaults;
+  }
+
+  const metadataValue = (data as { metadata?: unknown }).metadata;
+
+  if (metadataValue === undefined) {
+    return defaults;
+  }
+
+  if (!metadataValue || typeof metadataValue !== 'object' || Array.isArray(metadataValue)) {
+    errors.push(`Invalid ${sourceLabel}: "metadata" must be an object.`);
+    return defaults;
+  }
+
+  const { displayName, icon } = metadataValue as {
+    displayName?: unknown;
+    icon?: unknown;
+  };
+
+  let resolvedDisplayName = defaults?.displayName;
+  let resolvedIcon = defaults?.icon;
+
+  if (displayName !== undefined) {
+    if (typeof displayName !== 'string' || displayName.trim().length === 0) {
+      errors.push(
+        `Invalid ${sourceLabel}: "metadata.displayName" must be a non-empty string.`,
+      );
+    } else {
+      resolvedDisplayName = displayName;
+    }
+  }
+
+  if (icon !== undefined) {
+    if (typeof icon !== 'string' || icon.trim().length === 0) {
+      errors.push(
+        `Invalid ${sourceLabel}: "metadata.icon" must be a non-empty string.`,
+      );
+    } else {
+      resolvedIcon = icon;
+    }
+  }
+
+  if (resolvedDisplayName && resolvedIcon) {
+    return { displayName: resolvedDisplayName, icon: resolvedIcon };
+  }
+
+  return defaults;
+};
+
 export const PatternLoader = {
-  loadFromFile(filePath: string): PatternLoadResult {
+  loadFromFile(filePath: string, options?: PatternLoaderOptions): PatternLoadResult {
     let raw: string;
 
     try {
@@ -49,25 +119,32 @@ export const PatternLoader = {
       };
     }
 
-    return PatternLoader.loadFromObject(parsed, filePath);
+    return PatternLoader.loadFromObject(parsed, filePath, options);
   },
 
-  loadFromObject(data: unknown, sourceLabel = 'pattern data'): PatternLoadResult {
+  loadFromObject(
+    data: unknown,
+    sourceLabel = 'pattern data',
+    options?: PatternLoaderOptions,
+  ): PatternLoadResult {
     const patterns: CompiledPattern[] = [];
     const errors: string[] = [];
 
     if (!data || typeof data !== 'object' || Array.isArray(data)) {
       return {
         patterns,
+        metadata: options?.metadataDefaults,
         errors: [`Invalid ${sourceLabel}: expected an object.`],
       };
     }
 
+    const metadata = resolveMetadata(data, sourceLabel, options?.metadataDefaults, errors);
     const states = (data as { states?: unknown }).states;
 
     if (!states || typeof states !== 'object' || Array.isArray(states)) {
       return {
         patterns,
+        metadata,
         errors: [`Invalid ${sourceLabel}: "states" must be an object.`],
       };
     }
@@ -112,6 +189,6 @@ export const PatternLoader = {
       });
     }
 
-    return { patterns, errors };
+    return { patterns, metadata, errors };
   },
 };

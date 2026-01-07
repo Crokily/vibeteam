@@ -3,6 +3,7 @@ import { DashboardLayout } from './components/dashboard/DashboardLayout';
 import { NewWorkflowColumn } from './components/dashboard/NewWorkflowColumn';
 import { WorkflowColumn } from './components/dashboard/WorkflowColumn';
 import { Header } from './components/layout/Header';
+import { WorkflowCreatorDialog } from './components/workflow-creator/WorkflowCreatorDialog';
 import { ipcClient } from './lib/ipc-client';
 import { type SessionLayout, useAppStore } from './stores/app-store';
 import { connectIpcToStore } from './stores/ipc-sync';
@@ -17,10 +18,10 @@ export default function App() {
 
   const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null);
   const columnRefs = useRef(new Map<string, HTMLDivElement | null>());
-  const newWorkflowRef = useRef<HTMLDivElement | null>(null);
   const [highlightedSessionId, setHighlightedSessionId] = useState<string | null>(
     null
   );
+  const [isWorkflowDialogOpen, setWorkflowDialogOpen] = useState(false);
 
   useEffect(() => {
     const cleanup = connectIpcToStore();
@@ -76,11 +77,11 @@ export default function App() {
   }, []);
 
   const handleNewWorkflow = useCallback(() => {
-    newWorkflowRef.current?.scrollIntoView({
-      behavior: 'smooth',
-      inline: 'start',
-      block: 'nearest',
-    });
+    setWorkflowDialogOpen(true);
+  }, []);
+
+  const handleCloseWorkflowDialog = useCallback(() => {
+    setWorkflowDialogOpen(false);
   }, []);
 
   const handleSelectTask = useCallback(
@@ -133,39 +134,43 @@ export default function App() {
   );
 
   return (
-    <DashboardLayout
-      header={
-        <Header
-          activeCount={activeSessionIds.length}
-          notificationCount={notificationCount}
-          onNotificationClick={handleNotificationClick}
-          onNewWorkflow={handleNewWorkflow}
-        />
-      }
-      scrollRef={setScrollRef}
-    >
-      {activeSessionIds.map((sessionId) => {
-        const session = sessions[sessionId];
-        if (!session) {
-          return null;
-        }
-        return (
-          <WorkflowColumn
-            key={sessionId}
-            session={session}
-            scrollRoot={scrollRoot}
-            isHighlighted={sessionId === highlightedSessionId}
-            onLayoutChange={handleLayoutChange}
-            onSelectTask={handleSelectTask}
-            onClose={handleCloseSession}
-            onInteractionSubmitted={handleInteractionSubmitted}
-            registerRef={registerColumnRef}
+    <>
+      <DashboardLayout
+        header={
+          <Header
+            activeCount={activeSessionIds.length}
+            notificationCount={notificationCount}
+            onNotificationClick={handleNotificationClick}
+            onNewWorkflow={handleNewWorkflow}
           />
-        );
-      })}
-      <div ref={newWorkflowRef}>
+        }
+        scrollRef={setScrollRef}
+      >
+        {activeSessionIds.map((sessionId) => {
+          const session = sessions[sessionId];
+          if (!session) {
+            return null;
+          }
+          return (
+            <WorkflowColumn
+              key={sessionId}
+              session={session}
+              scrollRoot={scrollRoot}
+              isHighlighted={sessionId === highlightedSessionId}
+              onLayoutChange={handleLayoutChange}
+              onSelectTask={handleSelectTask}
+              onClose={handleCloseSession}
+              onInteractionSubmitted={handleInteractionSubmitted}
+              registerRef={registerColumnRef}
+            />
+          );
+        })}
         <NewWorkflowColumn onClick={handleNewWorkflow} />
-      </div>
-    </DashboardLayout>
+      </DashboardLayout>
+      <WorkflowCreatorDialog
+        isOpen={isWorkflowDialogOpen}
+        onClose={handleCloseWorkflowDialog}
+      />
+    </>
   );
 }

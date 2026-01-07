@@ -2,10 +2,14 @@ import * as path from 'path';
 import { readFileSync } from 'fs';
 
 import { ModesConfig } from '../IAgentAdapter';
-import { PatternLoader, CompiledPattern } from '../PatternLoader';
+import { PatternLoader, CompiledPattern, type AdapterMetadata } from '../PatternLoader';
 import embeddedConfig from './config.json';
 
 export type AdapterConfig = {
+  metadata?: {
+    displayName?: string;
+    icon?: string;
+  };
   states?: Record<string, unknown>;
   modes?: ModesConfig;
 };
@@ -13,6 +17,7 @@ export type AdapterConfig = {
 export type ConfigLoadResult = {
   patterns: CompiledPattern[];
   modes: ModesConfig;
+  metadata: AdapterMetadata;
   errors: string[];
 };
 
@@ -37,6 +42,7 @@ export const loadGeminiConfig = (configPath?: string): ConfigLoadResult => {
   return {
     patterns: fallback.patterns,
     modes: fallback.modes,
+    metadata: fallback.metadata,
     errors: [...errors, ...fallback.errors],
   };
 };
@@ -50,6 +56,7 @@ const loadConfigFromFile = (filePath: string): ConfigLoadResult => {
     return {
       patterns: [],
       modes: {},
+      metadata: defaultMetadata(),
       errors: [`Failed to read ${filePath}: ${formatError(error)}`],
     };
   }
@@ -62,6 +69,7 @@ const loadConfigFromFile = (filePath: string): ConfigLoadResult => {
     return {
       patterns: [],
       modes: {},
+      metadata: defaultMetadata(),
       errors: [`Failed to parse JSON in ${filePath}: ${formatError(error)}`],
     };
   }
@@ -79,16 +87,23 @@ const loadConfigFromObject = (
     return {
       patterns: [],
       modes: {},
+      metadata: defaultMetadata(),
       errors: [`Invalid ${sourceLabel}: expected an object.`],
     };
   }
 
   const config = data as AdapterConfig;
 
-  // Load patterns using existing PatternLoader
-  const patternResult = config.states
-    ? PatternLoader.loadFromObject({ states: config.states }, sourceLabel)
-    : { patterns: [], errors: [] };
+  const metadataDefaults = defaultMetadata();
+  // Load patterns and metadata using PatternLoader
+  const patternResult = PatternLoader.loadFromObject(
+    {
+      states: config.states ?? {},
+      metadata: config.metadata,
+    },
+    sourceLabel,
+    { metadataDefaults },
+  );
 
   errors.push(...patternResult.errors);
 
@@ -98,6 +113,7 @@ const loadConfigFromObject = (
   return {
     patterns: patternResult.patterns,
     modes,
+    metadata: patternResult.metadata ?? metadataDefaults,
     errors,
   };
 };
@@ -164,3 +180,8 @@ const resolveConfigPaths = (configPath?: string): string[] => {
     path.join(cwd, 'gemini', 'config.json'),
   ];
 };
+
+const defaultMetadata = (): AdapterMetadata => ({
+  displayName: 'gemini',
+  icon: 'adapter',
+});

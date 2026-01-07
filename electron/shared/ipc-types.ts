@@ -3,6 +3,13 @@ import type { AppConfig } from './config';
 export type ExecutionMode = 'interactive' | 'headless';
 export type AdapterType = string;
 
+export type AdapterMeta = {
+  type: AdapterType;
+  displayName: string;
+  icon: string;
+  supportedModes: ExecutionMode[];
+};
+
 export type WorkflowTask = {
   id: string;
   adapter: AdapterType;
@@ -110,6 +117,7 @@ export type IpcCommands = {
     rows: number
   ) => Promise<void>;
   'task:complete': (sessionId: string, taskId: string) => Promise<void>;
+  'adapter:list': () => Promise<AdapterMeta[]>;
   'session:list': () => Promise<SessionSummary[]>;
   'session:load': (sessionId: string) => Promise<WorkflowSessionSnapshot>;
   'session:resume': (sessionId: string) => Promise<string>;

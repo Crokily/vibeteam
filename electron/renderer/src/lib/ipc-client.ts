@@ -1,5 +1,6 @@
 import type { AppConfig } from '../../../shared/config';
 import type {
+  AdapterMeta,
   SessionSummary,
   WorkflowDefinition,
   WorkflowSessionSnapshot,
@@ -25,6 +26,9 @@ export const ipcClient = {
       getApi().task.resize(sessionId, taskId, cols, rows),
     complete: (sessionId: string, taskId: string) =>
       getApi().task.complete(sessionId, taskId),
+  },
+  adapter: {
+    list: (): Promise<AdapterMeta[]> => getApi().adapter.list(),
   },
   session: {
     list: (): Promise<SessionSummary[]> => getApi().session.list(),

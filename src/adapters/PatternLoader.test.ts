@@ -6,6 +6,10 @@ describe('PatternLoader', () => {
   it('compiles patterns and matches expected output', () => {
     const result = PatternLoader.loadFromObject(
       {
+        metadata: {
+          displayName: 'Gemini CLI',
+          icon: 'gemini',
+        },
         states: {
           approval: {
             pattern: 'approve\\? \\[y/N\\]',
@@ -15,10 +19,17 @@ describe('PatternLoader', () => {
         },
       },
       'inline patterns',
+      {
+        metadataDefaults: {
+          displayName: 'gemini',
+          icon: 'adapter',
+        },
+      },
     );
 
     expect(result.errors).toEqual([]);
     expect(result.patterns).toHaveLength(1);
+    expect(result.metadata).toEqual({ displayName: 'Gemini CLI', icon: 'gemini' });
 
     const [pattern] = result.patterns;
     expect(pattern.name).toBe('approval');
@@ -36,9 +47,32 @@ describe('PatternLoader', () => {
         },
       },
       'inline patterns',
+      {
+        metadataDefaults: {
+          displayName: 'gemini',
+          icon: 'adapter',
+        },
+      },
     );
 
     expect(result.patterns).toHaveLength(0);
     expect(result.errors[0]).toContain('Invalid regex');
+  });
+
+  it('applies metadata defaults when missing', () => {
+    const result = PatternLoader.loadFromObject(
+      {
+        states: {},
+      },
+      'inline patterns',
+      {
+        metadataDefaults: {
+          displayName: 'gemini',
+          icon: 'adapter',
+        },
+      },
+    );
+
+    expect(result.metadata).toEqual({ displayName: 'gemini', icon: 'adapter' });
   });
 });

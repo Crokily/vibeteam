@@ -27,6 +27,15 @@ const executionModeValues = ['interactive', 'headless'] as const;
 
 export const executionModeSchema = z.enum(executionModeValues);
 
+export const adapterMetaSchema = z
+  .object({
+    type: z.string(),
+    displayName: z.string(),
+    icon: z.string(),
+    supportedModes: z.array(executionModeSchema),
+  })
+  .strict();
+
 export const workflowTaskSchema = z
   .object({
     id: z.string(),
@@ -144,6 +153,7 @@ export const ipcCommandSchemas = {
     z.number().int().min(1),
   ]),
   'task:complete': z.tuple([z.string(), z.string()]),
+  'adapter:list': z.tuple([]),
   'session:list': z.tuple([]),
   'session:load': z.tuple([z.string()]),
   'session:resume': z.tuple([z.string()]),

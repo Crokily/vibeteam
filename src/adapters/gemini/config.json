@@ -1,4 +1,8 @@
 {
+  "metadata": {
+    "displayName": "Gemini CLI",
+    "icon": "gemini"
+  },
   "states": {
     "interaction_idle": {
       "pattern": "(│\\s*>\\s*Type your message(?: or @path/to/file)?|Type your message(?: or @path/to/file)?)",

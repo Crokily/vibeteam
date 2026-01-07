@@ -1,9 +1,20 @@
 export * from './orchestrator';
 
 import { adapterRegistry } from './adapters/registry';
+import type { ExecutionMode, ModesConfig } from './adapters/IAgentAdapter';
 import { GeminiAdapter } from './adapters/gemini';
+import { loadGeminiConfig } from './adapters/gemini/configLoader';
 
-adapterRegistry.register('gemini', GeminiAdapter);
+const resolveSupportedModes = (modes: ModesConfig): ExecutionMode[] =>
+  (['interactive', 'headless'] as const).filter((mode) => !!modes[mode]);
+
+const geminiConfig = loadGeminiConfig();
+
+adapterRegistry.register('gemini', GeminiAdapter, {
+  displayName: geminiConfig.metadata.displayName,
+  icon: geminiConfig.metadata.icon,
+  supportedModes: resolveSupportedModes(geminiConfig.modes),
+});
 
 export type { AgentLaunchConfig, IAgentAdapter } from './adapters/IAgentAdapter';
 export { AdapterRegistry, adapterRegistry } from './adapters/registry';

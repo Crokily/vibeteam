@@ -6,12 +6,14 @@ import {
   type AppConfig,
 } from '../../shared/config';
 import type {
+  AdapterMeta,
   SessionSummary,
   TaskStatus,
   WorkflowDefinition,
   WorkflowSessionSnapshot,
 } from '../../shared/ipc-types';
 import { appConfigValueSchemas } from '../../shared/ipc-schemas';
+import { adapterRegistry } from '../../../src/adapters/registry';
 import { SessionManager } from '../../../src/orchestrator';
 import { getConfig, setConfig } from '../config-store';
 import { getOrchestrator } from '../orchestrator';
@@ -81,6 +83,17 @@ export const commandHandlers = {
   },
   'task:complete': async (sessionId: string, taskId: string): Promise<void> => {
     getOrchestrator().completeTask(sessionId, taskId);
+  },
+  'adapter:list': async (): Promise<AdapterMeta[]> => {
+    return adapterRegistry.getRegisteredTypes().map((type) => {
+      const metadata = adapterRegistry.getMetadata(type);
+      return {
+        type,
+        displayName: metadata?.displayName ?? type,
+        icon: metadata?.icon ?? 'adapter',
+        supportedModes: metadata?.supportedModes ?? [],
+      };
+    });
   },
   'session:list': async (): Promise<SessionSummary[]> => {
     const baseDir = resolveBaseDir();

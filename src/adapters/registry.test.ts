@@ -34,7 +34,11 @@ class TestAdapter extends EventEmitter implements IAgentAdapter {
 describe('AdapterRegistry', () => {
   it('creates adapter instances with provided options', () => {
     const registry = new AdapterRegistry();
-    registry.register('test', TestAdapter);
+    registry.register('test', TestAdapter, {
+      displayName: 'Test Adapter',
+      icon: 'test',
+      supportedModes: ['interactive'],
+    });
 
     const first = registry.create('test', { cwd: '/tmp', name: 'one' });
     const second = registry.create('test', { cwd: '/tmp', name: 'two' });
@@ -51,5 +55,22 @@ describe('AdapterRegistry', () => {
     expect(() => registry.create('missing')).toThrow(
       'Adapter type "missing" is not registered.',
     );
+  });
+
+  it('returns registered types and metadata', () => {
+    const registry = new AdapterRegistry();
+    registry.register('test', TestAdapter, {
+      displayName: 'Test Adapter',
+      icon: 'test',
+      supportedModes: ['interactive', 'headless'],
+    });
+
+    expect(registry.getRegisteredTypes()).toEqual(['test']);
+    expect(registry.getMetadata('test')).toEqual({
+      displayName: 'Test Adapter',
+      icon: 'test',
+      supportedModes: ['interactive', 'headless'],
+    });
+    expect(registry.getMetadata('missing')).toBeUndefined();
   });
 });

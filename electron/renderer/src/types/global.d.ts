@@ -1,5 +1,6 @@
 import type { AppConfig } from '../../../shared/config';
 import type {
+  AdapterMeta,
   IpcEventChannel,
   IpcEvents,
   SessionSummary,
@@ -25,6 +26,9 @@ declare global {
           rows: number
         ) => Promise<void>;
         complete: (sessionId: string, taskId: string) => Promise<void>;
+      };
+      adapter: {
+        list: () => Promise<AdapterMeta[]>;
       };
       session: {
         list: () => Promise<SessionSummary[]>;

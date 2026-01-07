@@ -1,5 +1,7 @@
 import type { BrowserWindow } from 'electron';
 import { GeminiAdapter } from '../../src/adapters/gemini';
+import { loadGeminiConfig } from '../../src/adapters/gemini/configLoader';
+import type { ExecutionMode, ModesConfig } from '../../src/adapters/IAgentAdapter';
 import { MockAdapter } from '../../src/adapters/MockAdapter';
 import { adapterRegistry } from '../../src/adapters/registry';
 import {
@@ -22,11 +24,23 @@ let orchestrator: Orchestrator | null = null;
 let mainWindowRef: BrowserWindow | null = null;
 let listenersAttached = false;
 
+const resolveSupportedModes = (modes: ModesConfig): ExecutionMode[] =>
+  (['interactive', 'headless'] as const).filter((mode) => !!modes[mode]);
+
 if (!adapterRegistry.has('gemini')) {
-  adapterRegistry.register('gemini', GeminiAdapter);
+  const geminiConfig = loadGeminiConfig();
+  adapterRegistry.register('gemini', GeminiAdapter, {
+    displayName: geminiConfig.metadata.displayName,
+    icon: geminiConfig.metadata.icon,
+    supportedModes: resolveSupportedModes(geminiConfig.modes),
+  });
 }
 if (!adapterRegistry.has('mock')) {
-  adapterRegistry.register('mock', MockAdapter);
+  adapterRegistry.register('mock', MockAdapter, {
+    displayName: 'Mock Adapter',
+    icon: 'adapter',
+    supportedModes: ['interactive', 'headless'],
+  });
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>

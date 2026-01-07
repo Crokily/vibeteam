@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 import type { IpcRendererEvent } from 'electron';
 import type { AppConfig } from '../shared/config';
 import type {
+  AdapterMeta,
   IpcEventChannel,
   IpcEvents,
   SessionSummary,
@@ -32,6 +33,9 @@ const electronAPI = {
       ) as Promise<void>,
     complete: (sessionId: string, taskId: string) =>
       ipcRenderer.invoke('task:complete', sessionId, taskId) as Promise<void>,
+  },
+  adapter: {
+    list: () => ipcRenderer.invoke('adapter:list') as Promise<AdapterMeta[]>,
   },
   session: {
     list: () => ipcRenderer.invoke('session:list') as Promise<SessionSummary[]>,
