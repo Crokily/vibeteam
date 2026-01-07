@@ -168,10 +168,54 @@ const buildWorkflowDefinition = (
   };
 };
 
+const validateWorkflowDefinition = (
+  workflow: WorkflowDefinition,
+  adapterLookup: Record<string, AdapterMeta>,
+  validateAdapters: boolean,
+): string | null => {
+  if (!workflow.stages || workflow.stages.length === 0) {
+    return 'Add at least one agent.';
+  }
+
+  if (validateAdapters && Object.keys(adapterLookup).length === 0) {
+    return 'No adapters available.';
+  }
+
+  const seenTaskIds = new Set<string>();
+
+  for (const stage of workflow.stages) {
+    if (!stage.tasks || stage.tasks.length === 0) {
+      return `Stage "${stage.id}" must contain at least one task.`;
+    }
+
+    for (const task of stage.tasks) {
+      if (!task.id || !task.id.trim()) {
+        return 'Workflow task is missing an id.';
+      }
+      if (!task.adapter || !task.adapter.trim()) {
+        return `Workflow task "${task.id}" adapter must be a non-empty string.`;
+      }
+      if (validateAdapters && !adapterLookup[task.adapter]) {
+        return `Workflow task "${task.id}" adapter type "${task.adapter}" is not registered.`;
+      }
+      if (task.executionMode === 'headless' && (!task.prompt || !task.prompt.trim())) {
+        return `Workflow task "${task.id}" prompt is required for headless mode.`;
+      }
+      if (seenTaskIds.has(task.id)) {
+        return `Workflow task id "${task.id}" must be unique.`;
+      }
+      seenTaskIds.add(task.id);
+    }
+  }
+
+  return null;
+};
+
 export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialogProps) => {
   const [workflowId, setWorkflowId] = useState(createWorkflowId());
   const [baseDir, setBaseDir] = useState('');
   const [adapters, setAdapters] = useState<AdapterMeta[]>([]);
+  const [adaptersLoaded, setAdaptersLoaded] = useState(false);
   const [adapterOpen, setAdapterOpen] = useState(false);
   const [selectedAdapter, setSelectedAdapter] = useState('');
   const [mode, setMode] = useState<ExecutionMode>('interactive');
@@ -189,6 +233,12 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
   const [importError, setImportError] = useState<string | null>(null);
 
   const adapterMenuRef = useRef<HTMLDivElement | null>(null);
+  const initialStateRef = useRef<{
+    workflowId: string;
+    selectedAdapter: string;
+    mode: ExecutionMode;
+  }>({ workflowId: '', selectedAdapter: '', mode: 'interactive' });
+  const isInitializingRef = useRef(false);
 
   const adapterMetaLookup = useMemo(() => {
     const lookup: Record<string, AdapterMeta> = {};
@@ -222,14 +272,20 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
     agentName.trim().length > 0 ||
     extraArgs.trim().length > 0 ||
     cwd.trim().length > 0 ||
-    envEntries.some((entry) => entry.key.trim() || entry.value.trim());
+    envEntries.some((entry) => entry.key.trim() || entry.value.trim()) ||
+    importValue.trim().length > 0 ||
+    workflowId.trim() !== initialStateRef.current.workflowId ||
+    selectedAdapter !== initialStateRef.current.selectedAdapter ||
+    mode !== initialStateRef.current.mode;
 
   const resetState = useCallback(() => {
-    setWorkflowId(createWorkflowId());
+    const nextWorkflowId = createWorkflowId();
+    setWorkflowId(nextWorkflowId);
     setBaseDir('');
     setLayout({ rows: [], agents: {} });
     setPrompt('');
     setMode('interactive');
+    setSelectedAdapter('');
     setAdapterOpen(false);
     setAdvancedOpen(false);
     setCwd('');
@@ -241,6 +297,13 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
     setImportOpen(false);
     setImportValue('');
     setImportError(null);
+    setAdaptersLoaded(false);
+    initialStateRef.current = {
+      workflowId: nextWorkflowId,
+      selectedAdapter: '',
+      mode: 'interactive',
+    };
+    isInitializingRef.current = true;
   }, []);
 
   useEffect(() => {
@@ -257,6 +320,7 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
     }
 
     let isMounted = true;
+    setAdaptersLoaded(false);
     ipcClient.adapter
       .list()
       .then((list) => {
@@ -264,13 +328,24 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
           return;
         }
         setAdapters(list);
-        setSelectedAdapter((current) => current || list[0]?.type || '');
+        setSelectedAdapter((current) => {
+          const nextAdapter = current || list[0]?.type || '';
+          if (isInitializingRef.current && !current) {
+            initialStateRef.current = {
+              ...initialStateRef.current,
+              selectedAdapter: nextAdapter,
+            };
+          }
+          return nextAdapter;
+        });
+        setAdaptersLoaded(true);
       })
       .catch(() => {
         if (!isMounted) {
           return;
         }
         setAdapters([]);
+        setAdaptersLoaded(true);
       });
 
     return () => {
@@ -279,11 +354,25 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
   }, [isOpen]);
 
   useEffect(() => {
-    if (supportedModes.includes(mode)) {
+    if (!adaptersLoaded) {
       return;
     }
-    setMode(supportedModes[0] ?? 'interactive');
-  }, [mode, supportedModes]);
+
+    if (supportedModes.includes(mode)) {
+      if (isInitializingRef.current) {
+        isInitializingRef.current = false;
+      }
+      return;
+    }
+    const nextMode = supportedModes[0] ?? 'interactive';
+    setMode(nextMode);
+    if (isInitializingRef.current) {
+      initialStateRef.current = {
+        ...initialStateRef.current,
+        mode: nextMode,
+      };
+    }
+  }, [adaptersLoaded, mode, supportedModes]);
 
   useEffect(() => {
     if (!adapterOpen) {
@@ -333,8 +422,8 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
   const handleCreateAgent = () => {
     const errors: FormErrors = {};
 
-    if (!selectedAdapter) {
-      errors.adapter = 'Select an adapter.';
+    if (!selectedAdapter || !selectedAdapterMeta) {
+      errors.adapter = adapters.length > 0 ? 'Select a valid adapter.' : 'No adapters available.';
     }
 
     if (mode === 'headless' && !prompt.trim()) {
@@ -391,7 +480,8 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
 
   const handleRemoveAgent = (id: string) => {
     setLayout((current) => {
-      const { [id]: _, ...rest } = current.agents;
+      const rest = { ...current.agents };
+      delete rest[id];
       const rows = current.rows
         .map((row) => row.filter((agentId) => agentId !== id))
         .filter((row) => row.length > 0);
@@ -409,8 +499,13 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
 
   const handleCreateWorkflow = async () => {
     const workflow = buildWorkflowDefinition(workflowId, baseDir, layout);
-    if (workflow.stages.length === 0) {
-      setCanvasError('Add at least one agent.');
+    const validationError = validateWorkflowDefinition(
+      workflow,
+      adapterMetaLookup,
+      adaptersLoaded,
+    );
+    if (validationError) {
+      setCanvasError(validationError);
       return;
     }
 
@@ -443,6 +538,15 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
       }
 
       const definition = validation.data;
+      const semanticError = validateWorkflowDefinition(
+        definition,
+        adapterMetaLookup,
+        adaptersLoaded,
+      );
+      if (semanticError) {
+        setImportError(semanticError);
+        return;
+      }
       setWorkflowId(definition.id);
       setLayout(buildLayoutFromDefinition(definition));
       setCanvasError(null);
