@@ -1,0 +1,27 @@
+{
+  "metadata": {
+    "displayName": "Codex CLI",
+    "icon": "codex"
+  },
+  "states": {
+    "interaction_idle": {
+      "pattern": "^>\\s*",
+      "flags": "m",
+      "description": "Codex CLI standard input prompt"
+    },
+    "interaction_handler": {
+      "pattern": "Yes, proceed \\(y\\)",
+      "description": "Codex CLI execution confirmation menu"
+    }
+  },
+  "modes": {
+    "interactive": {
+      "baseArgs": [],
+      "promptPosition": "last"
+    },
+    "headless": {
+      "baseArgs": ["exec", "--yolo"],
+      "promptPosition": "last"
+    }
+  }
+}
