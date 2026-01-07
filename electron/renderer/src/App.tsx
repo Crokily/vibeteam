@@ -114,8 +114,13 @@ export default function App() {
       const isBusy =
         session.orchestratorState === 'RUNNING' ||
         session.orchestratorState === 'AWAITING_INTERACTION';
-      if (isBusy) {
-        const confirmed = window.confirm('Stop this workflow and close the column?');
+      const hasIncompleteTasks = Object.values(session.taskStatuses).some(
+        (status) => status !== 'DONE'
+      );
+      if (isBusy || hasIncompleteTasks) {
+        const confirmed = window.confirm(
+          'This workflow is not finished. Stop it and close the column?'
+        );
         if (!confirmed) {
           return;
         }

@@ -35,7 +35,7 @@ type WorkflowColumnProps = {
 const layoutWidths: Record<SessionLayout, string> = {
   minimized: 'w-[72px]',
   standard: 'w-[360px]',
-  expanded: 'w-[880px]',
+  expanded: 'w-[980px]',
 };
 
 export const WorkflowColumn = ({
@@ -119,6 +119,29 @@ export const WorkflowColumn = ({
     [session.pendingInteractions]
   );
 
+  const stageRows = useMemo(() => {
+    if (session.workflowStages.length === 0) {
+      if (taskIds.length === 0) {
+        return [];
+      }
+      return [{ id: 'stage-0', index: 0, taskIds }];
+    }
+
+    const stagedIds = new Set<string>();
+    session.workflowStages.forEach((stage) => {
+      stage.taskIds.forEach((taskId) => stagedIds.add(taskId));
+    });
+    const extras = taskIds.filter((taskId) => !stagedIds.has(taskId));
+    if (extras.length === 0) {
+      return session.workflowStages;
+    }
+
+    return [
+      ...session.workflowStages,
+      { id: 'stage-extra', index: session.workflowStages.length, taskIds: extras },
+    ];
+  }, [session.workflowStages, taskIds]);
+
   const resolvedActiveTaskId = session.activeTaskId ?? taskIds[0] ?? null;
   const layout = session.layout;
 
@@ -157,10 +180,14 @@ export const WorkflowColumn = ({
 
   const taskPanelClasses =
     layout === 'expanded'
-      ? 'flex-none w-[320px] border-r border-border/40'
+      ? 'flex-none w-[300px] border-r border-border/40'
       : 'flex-1';
 
-  const shouldRenderTerminal = layout === 'expanded' && isVisible;
+  const shouldRenderTerminal = layout !== 'minimized' && isVisible;
+  const terminalPanelClasses =
+    layout === 'expanded'
+      ? 'flex min-h-0 flex-1 flex-col border-l border-border/40'
+      : 'flex min-h-0 flex-none w-0 flex-col overflow-hidden border-l border-transparent opacity-0 pointer-events-none';
 
   return (
     <div
@@ -215,87 +242,99 @@ export const WorkflowColumn = ({
       </header>
       <div className="flex min-h-0 flex-1">
         <div className={`flex min-h-0 flex-col px-3 py-3 ${taskPanelClasses}`}>
-          {taskIds.length === 0 ? (
+          {stageRows.length === 0 ? (
             <div className="flex flex-1 items-center justify-center rounded-2xl border border-border/40 bg-ink/40 px-3 py-4 text-xs text-ash">
               No tasks yet
             </div>
           ) : (
-            <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-1">
-              {taskIds.map((taskId) => {
-                const status = session.taskStatuses[taskId] ?? 'PENDING';
-                const label = session.taskMeta[taskId]?.label ?? taskId;
-                const isActive = taskId === resolvedActiveTaskId;
-                const needsAttention =
-                  attentionTaskIds.has(taskId) || status === 'WAITING_FOR_USER';
-
-                return (
-                  <button
-                    key={taskId}
-                    onClick={() => {
-                      onSelectTask(session.sessionId, taskId);
-                      if (layout !== 'expanded') {
-                        onLayoutChange(session.sessionId, 'expanded');
-                      }
-                    }}
-                    className={`relative flex items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left text-xs transition ${taskStatusStyles[status]} ${
-                      isActive ? 'shadow-[0_0_0_1px_rgba(226,232,240,0.2)]' : ''
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto pr-1">
+              <div className="rounded-xl overflow-hidden border border-border/20">
+                {stageRows.map((stage, index) => (
+                  <div
+                    key={stage.id}
+                    className={`grid grid-cols-2 gap-2 p-3 ${
+                      index % 2 === 0 ? 'bg-sky-500/10' : 'bg-white/10'
                     }`}
                   >
-                    <span
-                      className={`truncate font-medium ${
-                        isActive ? 'text-iron' : 'text-ash'
-                      }`}
-                      title={label}
-                    >
-                      {label}
-                    </span>
-                    {needsAttention ? (
-                      <span className="relative flex h-2 w-2">
-                        <span className="absolute inline-flex h-full w-full rounded-full bg-amber-400/40 tab-pulse" />
-                        <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-300" />
-                      </span>
-                    ) : null}
-                  </button>
-                );
-              })}
+                    {stage.taskIds.map((taskId) => {
+                      const status = session.taskStatuses[taskId] ?? 'PENDING';
+                      const label = session.taskMeta[taskId]?.label ?? taskId;
+                      const isActive = taskId === resolvedActiveTaskId;
+                      const needsAttention =
+                        attentionTaskIds.has(taskId) || status === 'WAITING_FOR_USER';
+
+                      return (
+                        <button
+                          key={taskId}
+                          onClick={() => {
+                            onSelectTask(session.sessionId, taskId);
+                            if (layout !== 'expanded') {
+                              onLayoutChange(session.sessionId, 'expanded');
+                            }
+                          }}
+                          className={`relative flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left text-[11px] transition ${taskStatusStyles[status]} ${
+                            isActive
+                              ? 'shadow-[0_0_0_1px_rgba(226,232,240,0.2)]'
+                              : ''
+                          }`}
+                        >
+                          <span
+                            className={`truncate font-medium ${
+                              isActive ? 'text-iron' : 'text-ash'
+                            }`}
+                            title={label}
+                          >
+                            {label}
+                          </span>
+                          {needsAttention ? (
+                            <span className="relative flex h-2 w-2">
+                              <span className="absolute inline-flex h-full w-full rounded-full bg-amber-400/40 tab-pulse" />
+                              <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-300" />
+                            </span>
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
-        {layout === 'expanded' ? (
-          <div className="flex min-h-0 flex-1 flex-col border-l border-border/40">
-            <TerminalTabs
-              tabs={taskIds.map((taskId) => ({
-                id: taskId,
-                label: session.taskMeta[taskId]?.label ?? taskId,
-                isActive: taskId === resolvedActiveTaskId,
-                needsAttention:
-                  attentionTaskIds.has(taskId) ||
-                  session.taskStatuses[taskId] === 'WAITING_FOR_USER',
-              }))}
-              onSelect={(taskId) => onSelectTask(session.sessionId, taskId)}
-            />
-            <div className="relative flex-1 min-h-0 bg-ink/60">
-              {shouldRenderTerminal
-                ? taskIds.map((taskId) => (
-                    <XTermTerminal
-                      key={taskId}
-                      sessionId={session.sessionId}
-                      taskId={taskId}
-                      active={taskId === resolvedActiveTaskId}
-                      canInteract={
-                        session.sessionMode === 'live' &&
-                        session.taskMeta[taskId]?.executionMode !== 'headless' &&
-                        (session.taskStatuses[taskId] === 'RUNNING' ||
-                          session.taskStatuses[taskId] === 'WAITING_FOR_USER')
-                      }
-                      readOnly={session.sessionMode === 'view'}
-                      onInteractionSubmitted={onInteractionSubmitted}
-                    />
-                  ))
-                : null}
-            </div>
+        <div className={terminalPanelClasses}>
+          <TerminalTabs
+            tabs={taskIds.map((taskId) => ({
+              id: taskId,
+              label: session.taskMeta[taskId]?.label ?? taskId,
+              isActive: taskId === resolvedActiveTaskId && layout === 'expanded',
+              needsAttention:
+                attentionTaskIds.has(taskId) ||
+                session.taskStatuses[taskId] === 'WAITING_FOR_USER',
+            }))}
+            onSelect={(taskId) => onSelectTask(session.sessionId, taskId)}
+          />
+          <div className="relative flex-1 min-h-0 bg-ink/60">
+            {shouldRenderTerminal
+              ? taskIds.map((taskId) => (
+                  <XTermTerminal
+                    key={taskId}
+                    sessionId={session.sessionId}
+                    taskId={taskId}
+                    active={layout === 'expanded' && taskId === resolvedActiveTaskId}
+                    canInteract={
+                      layout === 'expanded' &&
+                      session.sessionMode === 'live' &&
+                      session.taskMeta[taskId]?.executionMode !== 'headless' &&
+                      (session.taskStatuses[taskId] === 'RUNNING' ||
+                        session.taskStatuses[taskId] === 'WAITING_FOR_USER')
+                    }
+                    readOnly={session.sessionMode === 'view'}
+                    onInteractionSubmitted={onInteractionSubmitted}
+                  />
+                ))
+              : null}
           </div>
-        ) : null}
+        </div>
       </div>
     </div>
   );
