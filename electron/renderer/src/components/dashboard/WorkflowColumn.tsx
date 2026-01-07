@@ -144,195 +144,200 @@ export const WorkflowColumn = ({
 
   const resolvedActiveTaskId = session.activeTaskId ?? taskIds[0] ?? null;
   const layout = session.layout;
-
-  if (layout === 'minimized') {
-    return (
-      <div
-        ref={columnRef}
-        className={`flex flex-none flex-col items-center justify-between rounded-3xl border border-border bg-ink/50 px-2 py-3 ${layoutWidths[layout]} ${
-          isHighlighted ? 'ring-2 ring-amber-400/40' : ''
-        }`}
-        onClick={() => onLayoutChange(session.sessionId, 'standard')}
-      >
-        <span
-          className={`h-2 w-2 rounded-full ${orchestratorStyles[session.orchestratorState]} border`}
-          aria-hidden
-        />
-        <div
-          className="py-6 text-[11px] uppercase tracking-[0.25em] text-ash"
-          style={{ writingMode: 'vertical-rl' }}
-          title={goalLabel}
-        >
-          {goalLabel}
-        </div>
-        <button
-          onClick={(event) => {
-            event.stopPropagation();
-            onClose(session.sessionId);
-          }}
-          className="rounded-full border border-border/60 bg-ink/70 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-ash transition hover:border-rose-300/60 hover:text-rose-200"
-        >
-          Close
-        </button>
-      </div>
-    );
-  }
+  const isMinimized = layout === 'minimized';
+  const panelLayout = layout === 'expanded' ? 'expanded' : 'standard';
 
   const taskPanelClasses =
-    layout === 'expanded'
+    panelLayout === 'expanded'
       ? 'flex-none w-[300px] border-r border-border/40'
       : 'flex-1';
 
-  const shouldRenderTerminal = layout !== 'minimized' && isVisible;
+  const shouldRenderTerminal = isVisible;
   const terminalPanelClasses =
-    layout === 'expanded'
+    panelLayout === 'expanded'
       ? 'flex min-h-0 flex-1 flex-col border-l border-border/40'
       : 'flex min-h-0 flex-none w-0 flex-col overflow-hidden border-l border-transparent opacity-0 pointer-events-none';
 
   return (
     <div
       ref={columnRef}
-      className={`flex flex-none flex-col overflow-hidden rounded-3xl border border-border bg-slate/60 ${layoutWidths[layout]} ${
-        isHighlighted ? 'ring-2 ring-amber-400/40' : ''
-      }`}
+      className={`relative flex flex-none flex-col rounded-3xl border border-border ${layoutWidths[layout]} ${
+        isMinimized
+          ? 'items-center justify-between bg-ink/50 px-2 py-3'
+          : 'overflow-hidden bg-slate/60'
+      } ${isHighlighted ? 'ring-2 ring-amber-400/40' : ''}`}
+      onClick={
+        isMinimized ? () => onLayoutChange(session.sessionId, 'standard') : undefined
+      }
     >
-      <header className="flex items-center justify-between gap-3 border-b border-border/60 bg-ink/50 px-4 py-3">
-        <div className="min-w-0">
-          <div className="truncate text-sm text-iron" title={goalLabel}>
+      {isMinimized ? (
+        <>
+          <span
+            className={`h-2 w-2 rounded-full ${orchestratorStyles[session.orchestratorState]} border`}
+            aria-hidden
+          />
+          <div
+            className="py-6 text-[11px] uppercase tracking-[0.25em] text-ash"
+            style={{ writingMode: 'vertical-rl' }}
+            title={goalLabel}
+          >
             {goalLabel}
           </div>
-          <div className="mt-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.24em] text-ash">
-            <span
-              className={`rounded-full border px-2 py-1 ${orchestratorStyles[session.orchestratorState]}`}
-            >
-              {session.orchestratorState.replaceAll('_', ' ')}
-            </span>
-            <span className="max-w-[140px] truncate">{session.sessionId}</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-ash">
-          {layout === 'expanded' ? (
-            <button
-              onClick={() => onLayoutChange(session.sessionId, 'standard')}
-              className="rounded-full border border-border/70 bg-ink/60 px-3 py-1 transition hover:border-iron hover:text-iron"
-            >
-              Fold
-            </button>
-          ) : (
-            <button
-              onClick={() => onLayoutChange(session.sessionId, 'expanded')}
-              className="rounded-full border border-border/70 bg-ink/60 px-3 py-1 transition hover:border-iron hover:text-iron"
-            >
-              Terminal
-            </button>
-          )}
           <button
-            onClick={() => onLayoutChange(session.sessionId, 'minimized')}
-            className="rounded-full border border-border/70 bg-ink/60 px-3 py-1 transition hover:border-iron hover:text-iron"
-          >
-            Min
-          </button>
-          <button
-            onClick={() => onClose(session.sessionId)}
-            className="rounded-full border border-border/70 bg-ink/60 px-3 py-1 transition hover:border-rose-300/60 hover:text-rose-200"
+            onClick={(event) => {
+              event.stopPropagation();
+              onClose(session.sessionId);
+            }}
+            className="rounded-full border border-border/60 bg-ink/70 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-ash transition hover:border-rose-300/60 hover:text-rose-200"
           >
             Close
           </button>
-        </div>
-      </header>
-      <div className="flex min-h-0 flex-1">
-        <div className={`flex min-h-0 flex-col px-3 py-3 ${taskPanelClasses}`}>
-          {stageRows.length === 0 ? (
-            <div className="flex flex-1 items-center justify-center rounded-2xl border border-border/40 bg-ink/40 px-3 py-4 text-xs text-ash">
-              No tasks yet
+        </>
+      ) : null}
+      <div
+        className={`flex min-h-0 flex-1 flex-col ${
+          isMinimized ? 'pointer-events-none absolute inset-0 opacity-0' : ''
+        }`}
+        aria-hidden={isMinimized}
+      >
+        <header className="flex items-center justify-between gap-3 border-b border-border/60 bg-ink/50 px-4 py-3">
+          <div className="min-w-0">
+            <div className="truncate text-sm text-iron" title={goalLabel}>
+              {goalLabel}
             </div>
-          ) : (
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto pr-1">
-              <div className="rounded-xl overflow-hidden border border-border/20">
-                {stageRows.map((stage, index) => (
-                  <div
-                    key={stage.id}
-                    className={`grid grid-cols-2 gap-2 p-3 ${
-                      index % 2 === 0 ? 'bg-sky-500/10' : 'bg-white/10'
-                    }`}
-                  >
-                    {stage.taskIds.map((taskId) => {
-                      const status = session.taskStatuses[taskId] ?? 'PENDING';
-                      const label = session.taskMeta[taskId]?.label ?? taskId;
-                      const isActive = taskId === resolvedActiveTaskId;
-                      const needsAttention =
-                        attentionTaskIds.has(taskId) || status === 'WAITING_FOR_USER';
-
-                      return (
-                        <button
-                          key={taskId}
-                          onClick={() => {
-                            onSelectTask(session.sessionId, taskId);
-                            if (layout !== 'expanded') {
-                              onLayoutChange(session.sessionId, 'expanded');
-                            }
-                          }}
-                          className={`relative flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left text-[11px] transition ${taskStatusStyles[status]} ${
-                            isActive
-                              ? 'shadow-[0_0_0_1px_rgba(226,232,240,0.2)]'
-                              : ''
-                          }`}
-                        >
-                          <span
-                            className={`truncate font-medium ${
-                              isActive ? 'text-iron' : 'text-ash'
-                            }`}
-                            title={label}
-                          >
-                            {label}
-                          </span>
-                          {needsAttention ? (
-                            <span className="relative flex h-2 w-2">
-                              <span className="absolute inline-flex h-full w-full rounded-full bg-amber-400/40 tab-pulse" />
-                              <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-300" />
-                            </span>
-                          ) : null}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ))}
+            <div className="mt-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.24em] text-ash">
+              <span
+                className={`rounded-full border px-2 py-1 ${orchestratorStyles[session.orchestratorState]}`}
+              >
+                {session.orchestratorState.replaceAll('_', ' ')}
+              </span>
+              <span className="max-w-[140px] truncate">{session.sessionId}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-ash">
+            {panelLayout === 'expanded' ? (
+              <button
+                onClick={() => onLayoutChange(session.sessionId, 'standard')}
+                className="rounded-full border border-border/70 bg-ink/60 px-3 py-1 transition hover:border-iron hover:text-iron"
+              >
+                Fold
+              </button>
+            ) : (
+              <button
+                onClick={() => onLayoutChange(session.sessionId, 'expanded')}
+                className="rounded-full border border-border/70 bg-ink/60 px-3 py-1 transition hover:border-iron hover:text-iron"
+              >
+                Terminal
+              </button>
+            )}
+            <button
+              onClick={() => onLayoutChange(session.sessionId, 'minimized')}
+              className="rounded-full border border-border/70 bg-ink/60 px-3 py-1 transition hover:border-iron hover:text-iron"
+            >
+              Min
+            </button>
+            <button
+              onClick={() => onClose(session.sessionId)}
+              className="rounded-full border border-border/70 bg-ink/60 px-3 py-1 transition hover:border-rose-300/60 hover:text-rose-200"
+            >
+              Close
+            </button>
+          </div>
+        </header>
+        <div className="flex min-h-0 flex-1">
+          <div className={`flex min-h-0 flex-col px-3 py-3 ${taskPanelClasses}`}>
+            {stageRows.length === 0 ? (
+              <div className="flex flex-1 items-center justify-center rounded-2xl border border-border/40 bg-ink/40 px-3 py-4 text-xs text-ash">
+                No tasks yet
               </div>
+            ) : (
+              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto pr-1">
+                <div className="rounded-xl overflow-hidden border border-border/20">
+                  {stageRows.map((stage, index) => (
+                    <div
+                      key={stage.id}
+                      className={`grid grid-cols-2 gap-2 p-3 ${
+                        index % 2 === 0 ? 'bg-sky-500/10' : 'bg-white/10'
+                      }`}
+                    >
+                      {stage.taskIds.map((taskId) => {
+                        const status = session.taskStatuses[taskId] ?? 'PENDING';
+                        const label = session.taskMeta[taskId]?.label ?? taskId;
+                        const isActive = taskId === resolvedActiveTaskId;
+                        const needsAttention =
+                          attentionTaskIds.has(taskId) || status === 'WAITING_FOR_USER';
+
+                        return (
+                          <button
+                            key={taskId}
+                            onClick={() => {
+                              onSelectTask(session.sessionId, taskId);
+                              if (panelLayout !== 'expanded') {
+                                onLayoutChange(session.sessionId, 'expanded');
+                              }
+                            }}
+                            className={`relative flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left text-[11px] transition ${taskStatusStyles[status]} ${
+                              isActive
+                                ? 'shadow-[0_0_0_1px_rgba(226,232,240,0.2)]'
+                                : ''
+                            }`}
+                          >
+                            <span
+                              className={`truncate font-medium ${
+                                isActive ? 'text-iron' : 'text-ash'
+                              }`}
+                              title={label}
+                            >
+                              {label}
+                            </span>
+                            {needsAttention ? (
+                              <span className="relative flex h-2 w-2">
+                                <span className="absolute inline-flex h-full w-full rounded-full bg-amber-400/40 tab-pulse" />
+                                <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-300" />
+                              </span>
+                            ) : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className={terminalPanelClasses}>
+            <TerminalTabs
+              tabs={taskIds.map((taskId) => ({
+                id: taskId,
+                label: session.taskMeta[taskId]?.label ?? taskId,
+                isActive: taskId === resolvedActiveTaskId && panelLayout === 'expanded',
+                needsAttention:
+                  attentionTaskIds.has(taskId) ||
+                  session.taskStatuses[taskId] === 'WAITING_FOR_USER',
+              }))}
+              onSelect={(taskId) => onSelectTask(session.sessionId, taskId)}
+            />
+            <div className="relative flex-1 min-h-0 bg-ink/60">
+              {shouldRenderTerminal
+                ? taskIds.map((taskId) => (
+                    <XTermTerminal
+                      key={taskId}
+                      sessionId={session.sessionId}
+                      taskId={taskId}
+                      active={panelLayout === 'expanded' && taskId === resolvedActiveTaskId}
+                      canInteract={
+                        panelLayout === 'expanded' &&
+                        session.sessionMode === 'live' &&
+                        session.taskMeta[taskId]?.executionMode !== 'headless' &&
+                        (session.taskStatuses[taskId] === 'RUNNING' ||
+                          session.taskStatuses[taskId] === 'WAITING_FOR_USER')
+                      }
+                      readOnly={session.sessionMode === 'view'}
+                      onInteractionSubmitted={onInteractionSubmitted}
+                    />
+                  ))
+                : null}
             </div>
-          )}
-        </div>
-        <div className={terminalPanelClasses}>
-          <TerminalTabs
-            tabs={taskIds.map((taskId) => ({
-              id: taskId,
-              label: session.taskMeta[taskId]?.label ?? taskId,
-              isActive: taskId === resolvedActiveTaskId && layout === 'expanded',
-              needsAttention:
-                attentionTaskIds.has(taskId) ||
-                session.taskStatuses[taskId] === 'WAITING_FOR_USER',
-            }))}
-            onSelect={(taskId) => onSelectTask(session.sessionId, taskId)}
-          />
-          <div className="relative flex-1 min-h-0 bg-ink/60">
-            {shouldRenderTerminal
-              ? taskIds.map((taskId) => (
-                  <XTermTerminal
-                    key={taskId}
-                    sessionId={session.sessionId}
-                    taskId={taskId}
-                    active={layout === 'expanded' && taskId === resolvedActiveTaskId}
-                    canInteract={
-                      layout === 'expanded' &&
-                      session.sessionMode === 'live' &&
-                      session.taskMeta[taskId]?.executionMode !== 'headless' &&
-                      (session.taskStatuses[taskId] === 'RUNNING' ||
-                        session.taskStatuses[taskId] === 'WAITING_FOR_USER')
-                    }
-                    readOnly={session.sessionMode === 'view'}
-                    onInteractionSubmitted={onInteractionSubmitted}
-                  />
-                ))
-              : null}
           </div>
         </div>
       </div>

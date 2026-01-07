@@ -59,6 +59,7 @@ export const XTermTerminal = ({
       return entry.raw;
     }) ?? EMPTY_OUTPUT;
   const isHeadless = executionMode === 'headless';
+  const canComplete = canInteract && !readOnly && !isHeadless;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -152,7 +153,7 @@ export const XTermTerminal = ({
       outputIndexRef.current = 0;
     }
 
-    terminal.options.disableStdin = isHeadless || readOnly;
+    terminal.options.disableStdin = isHeadless || readOnly || !canInteract;
 
     if (output.length < outputIndexRef.current) {
       terminal.reset();
@@ -166,7 +167,7 @@ export const XTermTerminal = ({
       }
       outputIndexRef.current = output.length;
     }
-  }, [executionMode, isHeadless, output, readOnly]);
+  }, [canInteract, executionMode, isHeadless, output, readOnly]);
 
   useEffect(() => {
     if (!active) {
@@ -178,7 +179,7 @@ export const XTermTerminal = ({
   }, [active]);
 
   const handleComplete = () => {
-    if (readOnly) {
+    if (!canComplete) {
       return;
     }
     void ipcClient.task.complete(sessionId, taskId).catch(() => undefined);
@@ -195,7 +196,7 @@ export const XTermTerminal = ({
         <div ref={containerRef} className="h-full w-full" />
       </div>
 
-      {!isHeadless && !readOnly && (
+      {canComplete && (
         <div className="flex items-center justify-between border-t border-white/5 bg-[#292f39] px-4 py-2 text-xs text-[#e2e8f0]">
           <span className="opacity-50">When this task has finished running, click —&gt;</span>
           <button

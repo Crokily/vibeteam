@@ -50,7 +50,7 @@ const handleStateChange = (payload: CoreStateChange): void => {
   sendToRenderer('orchestrator:stateChange', {
     previous: mapAgentState(payload.from),
     current: mapAgentState(payload.to),
-    sessionId: payload.sessionId ?? null,
+    sessionId: payload.sessionId,
   });
 };
 

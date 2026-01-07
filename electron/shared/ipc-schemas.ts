@@ -87,7 +87,7 @@ export const orchestratorStateChangeSchema = z
   .object({
     previous: orchestratorStateSchema,
     current: orchestratorStateSchema,
-    sessionId: z.string().nullable(),
+    sessionId: z.string(),
   })
   .strict();
 
@@ -121,7 +121,7 @@ export const interactionNeededSchema = z
 
 export const workflowStartedSchema = z
   .object({
-    sessionId: z.string().nullable(),
+    sessionId: z.string(),
     workflow: workflowDefinitionSchema,
   })
   .strict();

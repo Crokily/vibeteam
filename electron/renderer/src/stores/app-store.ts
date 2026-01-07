@@ -167,10 +167,28 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
     set((state) => {
       const current = state.sessions[sessionId] ?? createSessionState(sessionId);
       const { workflowStages, taskMeta, firstTaskId } = buildWorkflowView(workflow);
-      const taskStatuses = buildTaskStatuses(workflow);
+      const defaultStatuses = buildTaskStatuses(workflow);
+      const taskStatuses: Record<string, TaskStatus> = {
+        ...defaultStatuses,
+        ...current.taskStatuses,
+      };
+      const pendingInteractionsByTaskId = new Map(
+        current.pendingInteractions.map((interaction) => [interaction.taskId, interaction])
+      );
+      for (const [taskId, status] of Object.entries(taskStatuses)) {
+        if (status !== 'WAITING_FOR_USER' || pendingInteractionsByTaskId.has(taskId)) {
+          continue;
+        }
+        pendingInteractionsByTaskId.set(taskId, { sessionId, taskId });
+      }
+      const pendingInteractions = Array.from(pendingInteractionsByTaskId.values());
+      const taskOutputs = Object.keys(current.taskOutputs).length > 0
+        ? current.taskOutputs
+        : {};
       const activeSessionIds = state.activeSessionIds.includes(sessionId)
         ? state.activeSessionIds
         : [...state.activeSessionIds, sessionId];
+      const activeTaskId = current.activeTaskId ?? firstTaskId;
 
       return {
         activeSessionIds,
@@ -184,9 +202,9 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
             workflowStages,
             taskStatuses,
             taskMeta,
-            taskOutputs: {},
-            pendingInteractions: [],
-            activeTaskId: firstTaskId,
+            taskOutputs,
+            pendingInteractions,
+            activeTaskId,
           },
         },
       };

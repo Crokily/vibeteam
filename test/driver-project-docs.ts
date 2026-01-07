@@ -235,13 +235,13 @@ async function runProjectDocsIntegration(): Promise<void> {
     }
   });
 
-  orchestrator.on('interactionNeeded', ({ taskId, payload }) => {
+  orchestrator.on('interactionNeeded', ({ sessionId, taskId, payload }) => {
     const detail = `Unexpected interaction for ${taskId}: ${JSON.stringify(payload)}`;
     unexpectedInteractions.push(detail);
     log(detail);
     logManager.writeLog(taskId, `${detail}\n`);
     try {
-      orchestrator.submitInteraction(taskId, '/exit\r');
+      orchestrator.submitInteraction(sessionId, taskId, '/exit\r');
     } catch (error) {
       log(`Failed to send /exit to ${taskId}: ${String(error)}`);
     }

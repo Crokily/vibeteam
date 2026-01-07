@@ -64,7 +64,7 @@ export type TaskOutputStream = 'stdout' | 'stderr';
 export interface OrchestratorStateChange {
   previous: OrchestratorState;
   current: OrchestratorState;
-  sessionId: string | null;
+  sessionId: string;
 }
 
 export interface TaskStatusChange {
@@ -90,7 +90,7 @@ export interface InteractionNeeded {
 }
 
 export interface WorkflowStarted {
-  sessionId: string | null;
+  sessionId: string;
   workflow: WorkflowDefinition;
 }
 

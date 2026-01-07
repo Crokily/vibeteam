@@ -81,16 +81,16 @@ const registerWorkflowHandlers = () => {
     return session.id;
   });
 
-  ipcMain.handle('workflow:stop', async () => {
-    getOrchestrator().disconnect();
+  ipcMain.handle('workflow:stop', async (_event, sessionId) => {
+    getOrchestrator().removeSession(sessionId);
   });
 
-  ipcMain.handle('task:interact', async (_event, taskId, input) => {
-    getOrchestrator().submitInteraction(taskId, input);
+  ipcMain.handle('task:interact', async (_event, sessionId, taskId, input) => {
+    getOrchestrator().submitInteraction(sessionId, taskId, input);
   });
 
-  ipcMain.handle('task:complete', async (_event, taskId) => {
-    getOrchestrator().completeTask(taskId);
+  ipcMain.handle('task:complete', async (_event, sessionId, taskId) => {
+    getOrchestrator().completeTask(sessionId, taskId);
   });
 
   handlersRegistered = true;

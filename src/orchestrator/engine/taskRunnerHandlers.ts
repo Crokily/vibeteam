@@ -43,8 +43,13 @@ export const cleanupRunner = (deps: TaskRunnerDeps, taskId: string): void => {
 export const handleInteractionNeeded = (
   deps: TaskRunnerDeps,
   taskId: string,
+  executionMode: ExecutionMode,
   payload?: unknown,
 ): void => {
+  if (executionMode !== 'interactive') {
+    return;
+  }
+
   deps.updateTaskStatus(taskId, 'WAITING_FOR_USER');
 
   const event: OrchestratorInteraction = {
@@ -59,8 +64,13 @@ export const handleInteractionNeeded = (
 export const handleAdapterStateChange = (
   deps: TaskRunnerDeps,
   taskId: string,
+  executionMode: ExecutionMode,
   ...args: unknown[]
 ): void => {
+  if (executionMode !== 'interactive') {
+    return;
+  }
+
   const event = args[0] as AdapterStateChange;
   const stateName = event?.to?.name?.toLowerCase();
   if (!stateName) {
@@ -69,7 +79,7 @@ export const handleAdapterStateChange = (
 
   // Interaction states trigger user notification
   if (stateName.includes('interaction')) {
-    handleInteractionNeeded(deps, taskId, {
+    handleInteractionNeeded(deps, taskId, executionMode, {
       source: 'stateChange',
       state: event.to,
     });
@@ -108,7 +118,7 @@ export const handleRunnerEvent = (
         /\bconfirm\b/i,
       ];
       if (interactionHints.some((pattern) => pattern.test(event.clean))) {
-        handleInteractionNeeded(deps, taskId, {
+        handleInteractionNeeded(deps, taskId, executionMode, {
           source: 'output-sniff',
         });
       }

@@ -63,6 +63,8 @@ export const SessionList = () => {
     setBusySessionId(sessionId);
     setError(null);
     try {
+      const snapshot = await ipcClient.session.load(sessionId);
+      loadSessionSnapshot(snapshot);
       await ipcClient.session.resume(sessionId);
       setOpen(false);
     } catch {

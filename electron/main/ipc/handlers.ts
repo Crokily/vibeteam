@@ -54,12 +54,10 @@ export const commandHandlers = {
   'workflow:execute': async (workflow: WorkflowDefinition): Promise<string> => {
     const orchestrator = getOrchestrator();
     const baseDir = resolveBaseDir();
-    const executePromise = orchestrator.executeWorkflow(workflow, { baseDir });
-    const sessionId = orchestrator.getSession()?.id;
-    if (!sessionId) {
-      throw new Error('Failed to start workflow session.');
-    }
+    const goal = workflow.goal?.trim() || workflow.id;
+    const sessionId = orchestrator.createSession(goal, { baseDir });
     sendIpcEvent('orchestrator:workflowStarted', { sessionId, workflow });
+    const executePromise = orchestrator.executeWorkflow(workflow, { baseDir, sessionId });
     void executePromise.catch(() => undefined);
     return sessionId;
   },
@@ -122,11 +120,11 @@ export const commandHandlers = {
 
     const orchestrator = getOrchestrator();
     const workflowDefinition = session.workflowDefinition as WorkflowDefinition;
+    sendIpcEvent('orchestrator:workflowStarted', { sessionId, workflow: workflowDefinition });
     const executePromise = orchestrator.executeWorkflow(workflowDefinition, {
       sessionId,
       baseDir,
     });
-    sendIpcEvent('orchestrator:workflowStarted', { sessionId, workflow: workflowDefinition });
     void executePromise.catch(() => undefined);
     return sessionId;
   },
