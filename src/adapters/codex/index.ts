@@ -1,5 +1,6 @@
 import { BaseCLIAdapter, BaseAdapterOptions } from '../base/BaseCLIAdapter';
-import { loadCodexConfig } from './configLoader';
+import { loadAdapterConfig } from '../base/AdapterConfigLoader';
+import embeddedConfig from './config.json';
 
 export type CodexAdapterOptions = Omit<BaseAdapterOptions, 'patterns' | 'modes'> & {
   command?: string;
@@ -13,7 +14,7 @@ export class CodexAdapter extends BaseCLIAdapter {
   private readonly configLoadErrors: string[];
 
   constructor(options: CodexAdapterOptions = {}) {
-    const configResult = loadCodexConfig(options.configPath);
+    const configResult = loadAdapterConfig('codex', embeddedConfig, options.configPath);
 
     super({
       ...options,

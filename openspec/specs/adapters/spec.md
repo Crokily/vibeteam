@@ -45,12 +45,13 @@ Adapters SHALL resolve configuration paths reliably regardless of execution cont
 - **THEN** it resolves paths relative to the project root/CWD, avoiding fragile `__dirname` references
 
 ### Requirement: Extensible Adapter Architecture
-New CLI adapters MUST be implemented by extending a common base class (e.g., `BaseCLIAdapter`) to inherit standard stream handling, buffering, and event management logic. Adapter types MUST be registered with the `AdapterRegistry` to be usable in workflow tasks.
+New CLI adapters MUST be implemented by extending a common base class (e.g., `BaseCLIAdapter`) to inherit standard stream handling, buffering, and event management logic. Adapters SHOULD use the shared `AdapterConfigLoader` to ensure consistent configuration parsing and metadata defaults. Adapter types MUST be registered with the `AdapterRegistry` to be usable in workflow tasks.
 
 #### Scenario: Minimal Implementation
 - **WHEN** a developer adds a new CLI adapter
 - **THEN** they only need to implement command configuration and argument parsing
 - **AND** do not need to rewrite buffer management or sniffer logic
+- **AND** reuse the shared configuration loader for parsing adapter config files
 - **AND** register the adapter type with the registry for workflow integration
 
 ### Requirement: Adapter Registry
@@ -149,4 +150,3 @@ The `AdapterRegistry` SHALL provide methods to enumerate registered adapter type
 #### Scenario: Unknown Type Metadata
 - **WHEN** `registry.getMetadata(type)` is called with an unregistered type
 - **THEN** it returns `undefined`
-

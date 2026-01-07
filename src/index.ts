@@ -3,15 +3,16 @@ export * from './orchestrator';
 import { adapterRegistry } from './adapters/registry';
 import type { ExecutionMode, ModesConfig } from './adapters/IAgentAdapter';
 import { GeminiAdapter } from './adapters/gemini';
-import { loadGeminiConfig } from './adapters/gemini/configLoader';
+import { loadAdapterConfig } from './adapters/base/AdapterConfigLoader';
+import geminiEmbeddedConfig from './adapters/gemini/config.json';
 import { CodexAdapter } from './adapters/codex';
-import { loadCodexConfig } from './adapters/codex/configLoader';
+import codexEmbeddedConfig from './adapters/codex/config.json';
 
 const resolveSupportedModes = (modes: ModesConfig): ExecutionMode[] =>
   (['interactive', 'headless'] as const).filter((mode) => !!modes[mode]);
 
-const geminiConfig = loadGeminiConfig();
-const codexConfig = loadCodexConfig();
+const geminiConfig = loadAdapterConfig('gemini', geminiEmbeddedConfig);
+const codexConfig = loadAdapterConfig('codex', codexEmbeddedConfig);
 
 adapterRegistry.register('gemini', GeminiAdapter, {
   displayName: geminiConfig.metadata.displayName,

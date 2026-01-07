@@ -1,5 +1,6 @@
 import { BaseCLIAdapter, BaseAdapterOptions } from '../base/BaseCLIAdapter';
-import { loadGeminiConfig } from './configLoader';
+import { loadAdapterConfig } from '../base/AdapterConfigLoader';
+import embeddedConfig from './config.json';
 
 export type GeminiAdapterOptions = Omit<BaseAdapterOptions, 'patterns' | 'modes'> & {
   command?: string;
@@ -13,7 +14,7 @@ export class GeminiAdapter extends BaseCLIAdapter {
   private readonly configLoadErrors: string[];
 
   constructor(options: GeminiAdapterOptions = {}) {
-    const configResult = loadGeminiConfig(options.configPath);
+    const configResult = loadAdapterConfig('gemini', embeddedConfig, options.configPath);
     
     super({
       ...options,
