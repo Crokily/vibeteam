@@ -44,47 +44,28 @@ The system SHALL implement the following IPC commands with real Orchestrator int
 
 #### Scenario: Workflow Execution Command
 - **WHEN** renderer invokes `electronAPI.workflow.execute(definition)`
-- **THEN** main process calls `orchestrator.executeWorkflow(definition)`
-- **AND** returns the session ID from the created WorkflowSession
-- **AND** Orchestrator events begin flowing to the renderer
+- **THEN** main process calls `orchestrator.createSession` and executes the workflow
+- **AND** returns the `sessionId`
 
 #### Scenario: Workflow Stop Command
-- **WHEN** renderer invokes `electronAPI.workflow.stop()`
-- **THEN** main process calls `orchestrator.disconnect()`
-- **AND** any active tasks are stopped
-- **AND** Orchestrator state transitions to IDLE
+- **WHEN** renderer invokes `electronAPI.workflow.stop(sessionId)`
+- **THEN** main process routes the request to `orchestrator.removeSession(sessionId)`
 
 #### Scenario: Task Interaction Command
-- **WHEN** renderer invokes `electronAPI.task.interact(taskId, input)`
-- **THEN** main process calls `orchestrator.submitInteraction(taskId, input)`
-- **AND** the input is sent to the specified task's runner
+- **WHEN** renderer invokes `electronAPI.task.interact(taskId, input, sessionId)`
+- **THEN** main process routes the input to the specific session identified by `sessionId`
 
 #### Scenario: Task Completion Command
-- **WHEN** renderer invokes `electronAPI.task.complete(taskId)`
-- **THEN** main process calls `orchestrator.completeTask(taskId)`
-- **AND** the task is marked as DONE and workflow proceeds
+- **WHEN** renderer invokes `electronAPI.task.complete(taskId, sessionId)`
+- **THEN** main process routes the completion signal to the specific session
 
 ### Requirement: IPC Events Contract
 The system SHALL broadcast the following events from main to renderer:
 
-#### Scenario: State Change Event
-- **WHEN** Orchestrator state changes (IDLE, RUNNING, AWAITING_INTERACTION, PAUSED, ERROR)
-- **THEN** main process sends `orchestrator:stateChange` event to renderer
-- **AND** event payload contains previous state, new state, and session reference
-
-#### Scenario: Task Status Change Event
-- **WHEN** a task's status changes (PENDING, RUNNING, WAITING_FOR_USER, DONE, ERROR)
-- **THEN** main process sends `orchestrator:taskStatusChange` event to renderer
-
-#### Scenario: Task Output Event
-- **WHEN** a task produces output (stdout/stderr)
-- **THEN** main process sends `orchestrator:taskOutput` event to renderer
-- **AND** event payload contains taskId, raw output, and cleaned output
-
-#### Scenario: Interaction Needed Event
-- **WHEN** a task requires user interaction
-- **THEN** main process sends `orchestrator:interactionNeeded` event to renderer
-- **AND** event payload contains taskId and optional context
+#### Scenario: Event Attribution
+- **WHEN** any Orchestrator event (stateChange, taskOutput, interactionNeeded, etc.) is emitted
+- **THEN** the payload SHALL include the `sessionId` of the originating workflow
+- **AND** the renderer uses this ID to update the correct column/store slice
 
 ### Requirement: Configuration Persistence
 The system SHALL persist application configuration using electron-store.
@@ -272,4 +253,36 @@ The system SHALL provide a structured layout with sidebar and main content area.
 - **WHEN** the window is resized
 - **THEN** the layout adjusts proportionally
 - **AND** the terminal panel resizes to fit
+
+### Requirement: Columnar Dashboard Layout
+The system SHALL provide a horizontally scrolling dashboard layout to display multiple workflows in parallel columns.
+
+#### Scenario: Horizontal Scrolling
+- **WHEN** multiple workflows are active
+- **THEN** they are displayed side-by-side as columns
+- **AND** the main container allows horizontal scrolling to view off-screen columns
+
+#### Scenario: Column States
+- **WHEN** a workflow column is displayed
+- **THEN** it can exist in one of three states: Minimized (icon only), Standard (task list), or Expanded (task list + terminal)
+- **AND** clicking a task triggers the Expanded state
+
+### Requirement: Global Notification Center
+The system SHALL provide a centralized notification area for cross-workflow alerts.
+
+#### Scenario: Status Indicator
+- **WHEN** any background workflow requires interaction or encounters an error
+- **THEN** a global indicator in the header updates (e.g., increments a counter or changes color)
+
+#### Scenario: Navigation
+- **WHEN** the notification indicator is clicked
+- **THEN** the dashboard automatically scrolls to the relevant workflow column
+
+### Requirement: Terminal Virtualization
+The system SHALL optimize terminal rendering for multiple active sessions.
+
+#### Scenario: Lazy Rendering
+- **WHEN** a terminal column is scrolled out of view or minimized
+- **THEN** the heavy XTerm rendering is paused or unmounted
+- **AND** data is buffered until the terminal becomes visible again
 

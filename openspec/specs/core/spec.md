@@ -46,14 +46,10 @@ The system SHALL provide utilities to process raw terminal output.
 ### Requirement: Centralized Workflow Management
 The system SHALL provide a modular orchestration layer to manage the execution flow of AI agents.
 
-#### Scenario: Component Separation
-- **WHEN** the system is started
-- **THEN** it utilizes distinct components for session persistence (`SessionManager`), execution logic (`WorkflowExecutor`), and public API (`Orchestrator`)
-
-#### Scenario: Stage-Based Pipeline
-- **WHEN** a Workflow defines multiple stages
-- **THEN** the Orchestrator runs all tasks in the current stage in parallel
-- **AND** waits for completion before moving to the next stage
+#### Scenario: Orchestrator as Container
+- **WHEN** the `Orchestrator` is initialized
+- **THEN** it acts as a container for multiple `SessionController` instances
+- **AND** proxies commands and events to/from the appropriate controller based on `sessionId`
 
 ### Requirement: Execution Modes
 The system SHALL allow each workflow task to declare an `adapter` type (string), `executionMode` (`interactive` or `headless`), a `prompt`, optional `extraArgs` for custom CLI arguments, and optional adapter configuration (`cwd`, `env`, `name`).
@@ -195,22 +191,11 @@ The system SHALL allow configuring the storage location for workflow executions.
 ### Requirement: Session Management IPC
 The system SHALL provide IPC commands to list, load, and resume sessions.
 
-#### Scenario: List Sessions
-- **WHEN** `session:list` is invoked
-- **THEN** the system returns a list of available sessions from the user data directory
-- **AND** each item includes id, goal, status, and startTime
-- **AND** the list is sorted by startTime descending
-
-#### Scenario: Load Session (View)
-- **WHEN** `session:load` is invoked with an ID
-- **THEN** the system reads the session file
-- **AND** returns the full session snapshot without starting execution
-
 #### Scenario: Resume Session (Run)
 - **WHEN** `session:resume` is invoked with an ID
 - **THEN** the system loads the session
-- **AND** retrieves the stored workflow definition
-- **AND** calls `orchestrator.executeWorkflow` to resume execution
+- **AND** creates a dedicated `SessionController` for it
+- **AND** resumes execution within that controller context
 
 ### Requirement: Session List UI
 The system SHALL provide a user interface to manage sessions.
@@ -222,4 +207,23 @@ The system SHALL provide a user interface to manage sessions.
 #### Scenario: Active Session Indicator
 - **WHEN** a session is currently loaded or running
 - **THEN** it is visually highlighted in the list
+
+### Requirement: Multi-Session Management
+The system SHALL support the concurrent execution and management of multiple workflow sessions.
+
+#### Scenario: Session Creation
+- **WHEN** `Orchestrator.createSession` is called
+- **THEN** a new `SessionController` is instantiated
+- **AND** a unique `sessionId` is returned
+- **AND** the session is registered in the Orchestrator's session map
+
+#### Scenario: Session Isolation
+- **WHEN** multiple sessions are active
+- **THEN** each session maintains its own `WorkflowExecutor`, `SessionManager`, and PTY processes
+- **AND** logs and events from one session do not bleed into another
+
+#### Scenario: Session Controller Pattern
+- **WHEN** a session is created
+- **THEN** a `SessionController` wraps the `SessionManager` and `WorkflowExecutor`
+- **AND** provides a unified interface for controlling that specific session
 

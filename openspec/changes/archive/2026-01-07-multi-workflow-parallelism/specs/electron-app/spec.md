@@ -44,6 +44,10 @@ The system SHALL implement the following IPC commands with real Orchestrator int
 - **THEN** main process calls `orchestrator.createSession` and executes the workflow
 - **AND** returns the `sessionId`
 
+#### Scenario: Workflow Stop Command
+- **WHEN** renderer invokes `electronAPI.workflow.stop(sessionId)`
+- **THEN** main process routes the request to `orchestrator.removeSession(sessionId)`
+
 #### Scenario: Task Interaction Command
 - **WHEN** renderer invokes `electronAPI.task.interact(taskId, input, sessionId)`
 - **THEN** main process routes the input to the specific session identified by `sessionId`

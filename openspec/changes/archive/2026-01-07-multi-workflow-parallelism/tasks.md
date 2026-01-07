@@ -41,11 +41,11 @@
 
 ## Phase 4: Integration & Polish
 
-- [ ] **Lifecycle Testing** <!-- id: 9 -->
+- [x] **Lifecycle Testing** <!-- id: 9 -->
     - Verify creating multiple sessions works.
     - Verify parallel execution (logs don't mix).
     - Verify closing/archiving sessions.
-- [ ] **Performance Tuning** <!-- id: 10 -->
+- [x] **Performance Tuning** <!-- id: 10 -->
     - Implement virtualization/unmounting for off-screen Terminals.
     - Stress test with 5+ concurrent workflows.
 - [x] **Design Review** <!-- id: 11 -->
