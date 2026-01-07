@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import type { OrchestratorState, TaskStatus } from '../../../../shared/ipc-types';
 import type { SessionLayout, SessionState } from '../../stores/app-store';
 import { TerminalTabs } from '../terminal/TerminalTabs';
@@ -40,7 +40,6 @@ const layoutWidths: Record<SessionLayout, string> = {
 
 export const WorkflowColumn = ({
   session,
-  scrollRoot,
   isHighlighted,
   onLayoutChange,
   onSelectTask,
@@ -49,30 +48,11 @@ export const WorkflowColumn = ({
   registerRef,
 }: WorkflowColumnProps) => {
   const columnRef = useRef<HTMLDivElement | null>(null);
-  const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
     registerRef(session.sessionId, columnRef.current);
     return () => registerRef(session.sessionId, null);
   }, [registerRef, session.sessionId]);
-
-  useEffect(() => {
-    const node = columnRef.current;
-    if (!node || !scrollRoot) {
-      setIsVisible(true);
-      return undefined;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsVisible(entry.isIntersecting);
-      },
-      { root: scrollRoot, threshold: 0.2 }
-    );
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [scrollRoot]);
 
   const goalLabel =
     session.workflow?.goal?.trim() ||
@@ -152,7 +132,6 @@ export const WorkflowColumn = ({
       ? 'flex-none w-[300px] border-r border-border/40'
       : 'flex-1';
 
-  const shouldRenderTerminal = isVisible;
   const terminalPanelClasses =
     panelLayout === 'expanded'
       ? 'flex min-h-0 flex-1 flex-col border-l border-border/40'
@@ -318,25 +297,23 @@ export const WorkflowColumn = ({
               onSelect={(taskId) => onSelectTask(session.sessionId, taskId)}
             />
             <div className="relative flex-1 min-h-0 bg-ink/60">
-              {shouldRenderTerminal
-                ? taskIds.map((taskId) => (
-                    <XTermTerminal
-                      key={taskId}
-                      sessionId={session.sessionId}
-                      taskId={taskId}
-                      active={panelLayout === 'expanded' && taskId === resolvedActiveTaskId}
-                      canInteract={
-                        panelLayout === 'expanded' &&
-                        session.sessionMode === 'live' &&
-                        session.taskMeta[taskId]?.executionMode !== 'headless' &&
-                        (session.taskStatuses[taskId] === 'RUNNING' ||
-                          session.taskStatuses[taskId] === 'WAITING_FOR_USER')
-                      }
-                      readOnly={session.sessionMode === 'view'}
-                      onInteractionSubmitted={onInteractionSubmitted}
-                    />
-                  ))
-                : null}
+              {taskIds.map((taskId) => (
+                <XTermTerminal
+                  key={taskId}
+                  sessionId={session.sessionId}
+                  taskId={taskId}
+                  active={panelLayout === 'expanded' && taskId === resolvedActiveTaskId}
+                  canInteract={
+                    panelLayout === 'expanded' &&
+                    session.sessionMode === 'live' &&
+                    session.taskMeta[taskId]?.executionMode !== 'headless' &&
+                    (session.taskStatuses[taskId] === 'RUNNING' ||
+                      session.taskStatuses[taskId] === 'WAITING_FOR_USER')
+                  }
+                  readOnly={session.sessionMode === 'view'}
+                  onInteractionSubmitted={onInteractionSubmitted}
+                />
+              ))}
             </div>
           </div>
         </div>
