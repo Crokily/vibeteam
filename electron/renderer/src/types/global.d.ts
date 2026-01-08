@@ -1,10 +1,12 @@
 import type { AppConfig } from '../../../shared/config';
 import type {
   AdapterMeta,
+  AgentUsageEntry,
   IpcEventChannel,
   IpcEvents,
   SessionSummary,
   WorkflowDefinition,
+  WorkflowUsageEntry,
   WorkflowSessionSnapshot,
 } from '../../../shared/ipc-types';
 
@@ -35,6 +37,10 @@ declare global {
         load: (sessionId: string) => Promise<WorkflowSessionSnapshot>;
         resume: (sessionId: string) => Promise<string>;
         delete: (sessionId: string) => Promise<void>;
+      };
+      stats: {
+        getTopWorkflows: (limit: number) => Promise<WorkflowUsageEntry[]>;
+        getTopAgents: (limit: number) => Promise<AgentUsageEntry[]>;
       };
       config: {
         get: <K extends keyof AppConfig>(key: K) => Promise<AppConfig[K]>;

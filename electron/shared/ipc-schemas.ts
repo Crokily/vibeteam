@@ -64,6 +64,35 @@ export const workflowDefinitionSchema = z
   })
   .strict();
 
+export const agentUsageConfigSchema = z
+  .object({
+    adapter: z.string(),
+    executionMode: executionModeSchema.optional(),
+    prompt: z.string().optional(),
+    extraArgs: z.array(z.string()).optional(),
+    cwd: z.string().optional(),
+    env: z.record(z.string().optional()).optional(),
+  })
+  .strict();
+
+export const agentUsageEntrySchema = z
+  .object({
+    hash: z.string(),
+    count: z.number().int().min(1),
+    lastUsed: z.number().int().min(0),
+    config: agentUsageConfigSchema,
+  })
+  .strict();
+
+export const workflowUsageEntrySchema = z
+  .object({
+    hash: z.string(),
+    count: z.number().int().min(1),
+    lastUsed: z.number().int().min(0),
+    definition: workflowDefinitionSchema,
+  })
+  .strict();
+
 export const orchestratorStateSchema = z.enum(orchestratorStateValues);
 export const taskStatusSchema = z.enum(taskStatusValues);
 export const taskOutputStreamSchema = z.enum(taskOutputStreamValues);
@@ -158,6 +187,8 @@ export const ipcCommandSchemas = {
   'session:load': z.tuple([z.string()]),
   'session:resume': z.tuple([z.string()]),
   'session:delete': z.tuple([z.string()]),
+  'stats:get-top-workflows': z.tuple([z.number().int().min(1)]),
+  'stats:get-top-agents': z.tuple([z.number().int().min(1)]),
   'config:get': z.tuple([appConfigKeySchema]),
   'config:set': z.tuple([appConfigKeySchema, z.unknown()]),
 } as const;

@@ -5,6 +5,7 @@ import { SessionController } from './SessionController';
 import { AgentState } from './state/AgentState';
 import { SessionManager } from './state/SessionManager';
 import { WorkflowSession } from './state/WorkflowSession';
+import { UsageStatsService } from './stats/UsageStatsService';
 import {
   ExecuteWorkflowOptions,
   OrchestratorAgentEvent,
@@ -43,6 +44,7 @@ export class Orchestrator extends EventEmitter {
   private readonly runnerFactory?: RunnerFactory;
   private readonly sessions = new Map<string, SessionController>();
   private readonly sessionListeners = new Map<string, SessionListenerSet>();
+  private readonly usageStats = new UsageStatsService();
 
   private defaultAdapter:
     | {
@@ -155,6 +157,7 @@ export class Orchestrator extends EventEmitter {
 
     this.installSignalHandlers();
     this.lastSessionId = controller.sessionId;
+    this.recordUsageStats(workflow, options.baseDir);
 
     return controller.executeWorkflow(workflow);
   }
@@ -340,5 +343,21 @@ export class Orchestrator extends EventEmitter {
 
     process.once('SIGINT', handler);
     process.once('SIGTERM', handler);
+  }
+
+  private recordUsageStats(workflow: WorkflowDefinition, baseDir?: string): void {
+    try {
+      if (baseDir) {
+        this.usageStats.setBaseDir(baseDir);
+      }
+      this.usageStats.recordWorkflowUsage(workflow);
+      workflow.stages.forEach((stage) => {
+        stage.tasks.forEach((task) => {
+          this.usageStats.recordAgentUsage(task);
+        });
+      });
+    } catch (error) {
+      this.emit('error', error);
+    }
   }
 }

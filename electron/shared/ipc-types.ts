@@ -32,6 +32,29 @@ export type WorkflowDefinition = {
   stages: WorkflowStage[];
 };
 
+export type AgentUsageConfig = {
+  adapter: AdapterType;
+  executionMode?: ExecutionMode;
+  prompt?: string;
+  extraArgs?: string[];
+  cwd?: string;
+  env?: Record<string, string | undefined>;
+};
+
+export type AgentUsageEntry = {
+  hash: string;
+  count: number;
+  lastUsed: number;
+  config: AgentUsageConfig;
+};
+
+export type WorkflowUsageEntry = {
+  hash: string;
+  count: number;
+  lastUsed: number;
+  definition: WorkflowDefinition;
+};
+
 export type WorkflowSessionSnapshot = {
   id: string;
   goal: string;
@@ -122,6 +145,8 @@ export type IpcCommands = {
   'session:load': (sessionId: string) => Promise<WorkflowSessionSnapshot>;
   'session:resume': (sessionId: string) => Promise<string>;
   'session:delete': (sessionId: string) => Promise<void>;
+  'stats:get-top-workflows': (limit: number) => Promise<WorkflowUsageEntry[]>;
+  'stats:get-top-agents': (limit: number) => Promise<AgentUsageEntry[]>;
   'config:get': <K extends keyof AppConfig>(key: K) => Promise<AppConfig[K]>;
   'config:set': <K extends keyof AppConfig>(key: K, value: AppConfig[K]) => Promise<void>;
 };
