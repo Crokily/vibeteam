@@ -104,13 +104,48 @@ export const XTermTerminal = ({
     terminal.open(container);
     fitAddon.fit();
 
+    const cursorPositionReportPrefix = '\x1b[';
+    const isCursorPositionReportChunk = (chunk: string): boolean => {
+      let start = chunk.indexOf(cursorPositionReportPrefix);
+      while (start !== -1) {
+        let index = start + cursorPositionReportPrefix.length;
+        let hasRow = false;
+        while (index < chunk.length && chunk[index] >= '0' && chunk[index] <= '9') {
+          hasRow = true;
+          index += 1;
+        }
+        if (!hasRow || chunk[index] !== ';') {
+          start = chunk.indexOf(cursorPositionReportPrefix, start + 1);
+          continue;
+        }
+        index += 1;
+        let hasCol = false;
+        while (index < chunk.length && chunk[index] >= '0' && chunk[index] <= '9') {
+          hasCol = true;
+          index += 1;
+        }
+        if (hasCol && chunk[index] === 'R') {
+          return true;
+        }
+        start = chunk.indexOf(cursorPositionReportPrefix, start + 1);
+      }
+      return false;
+    };
     const inputDisposable = terminal.onData((data) => {
-      if (!canInteractRef.current || readOnlyRef.current || !window.electronAPI) {
+      if (readOnlyRef.current || !window.electronAPI) {
+        return;
+      }
+
+      const isCursorPositionReport = isCursorPositionReportChunk(data);
+      const canSendInput = canInteractRef.current || isCursorPositionReport;
+      if (!canSendInput) {
         return;
       }
 
       void ipcClient.task.interact(sessionId, taskId, data).catch(() => undefined);
-      interactionRef.current(sessionId, taskId);
+      if (canInteractRef.current && !isCursorPositionReport) {
+        interactionRef.current(sessionId, taskId);
+      }
     });
 
     const resizeDisposable = terminal.onResize(({ cols, rows }) => {
@@ -153,7 +188,7 @@ export const XTermTerminal = ({
       outputIndexRef.current = 0;
     }
 
-    terminal.options.disableStdin = isHeadless || readOnly || !canInteract;
+    terminal.options.disableStdin = isHeadless || readOnly;
 
     if (output.length < outputIndexRef.current) {
       terminal.reset();
