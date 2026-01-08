@@ -48,6 +48,20 @@ export default function App() {
     });
   }, [activeSessionIds, sessions]);
 
+  const orderedSessionIds = useMemo(() => {
+    const minimized: string[] = [];
+    const others: string[] = [];
+    activeSessionIds.forEach((sessionId) => {
+      const session = sessions[sessionId];
+      if (session?.layout === 'minimized') {
+        minimized.push(sessionId);
+      } else {
+        others.push(sessionId);
+      }
+    });
+    return [...minimized, ...others];
+  }, [activeSessionIds, sessions]);
+
   const notificationCount = useMemo(() => {
     return attentionSessionIds.reduce((total, sessionId) => {
       const session = sessions[sessionId];
@@ -146,7 +160,7 @@ export default function App() {
         }
         scrollRef={setScrollRef}
       >
-        {activeSessionIds.map((sessionId) => {
+        {orderedSessionIds.map((sessionId) => {
           const session = sessions[sessionId];
           if (!session) {
             return null;
