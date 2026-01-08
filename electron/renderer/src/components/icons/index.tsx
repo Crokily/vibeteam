@@ -49,6 +49,17 @@ export const AdapterIcon = ({ name, className }: AdapterIconProps) => {
     );
   }
 
+  if (name === 'opencode') {
+    return (
+      <svg viewBox="0 0 24 24" className={className}>
+        <rect x="0" y="0" width="24" height="24" fill="black" />
+        <rect x="6" y="4" width="12" height="16" fill="white" />
+        <rect x="9" y="7" width="6" height="10" fill="#666" />
+        <rect x="9" y="7" width="6" height="2" fill="black" />
+      </svg>
+    );
+  }
+
   return (
     <svg
       viewBox="0 0 24 24"

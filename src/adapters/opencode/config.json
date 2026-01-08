@@ -1,0 +1,29 @@
+{
+  "metadata": {
+    "displayName": "OpenCode",
+    "icon": "opencode"
+  },
+  "states": {
+    "execution_running": {
+      "pattern": "\\besc\\s+interrupt\\b",
+      "flags": "i",
+      "description": "OpenCode running indicator"
+    },
+    "interaction_handler": {
+      "pattern": "Permission required to run this tool:",
+      "flags": "i",
+      "description": "OpenCode tool permission prompt"
+    }
+  },
+  "modes": {
+    "interactive": {
+      "baseArgs": [],
+      "promptPosition": "flag",
+      "promptFlag": "--prompt"
+    },
+    "headless": {
+      "baseArgs": ["run"],
+      "promptPosition": "last"
+    }
+  }
+}
