@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { CSS } from '@dnd-kit/utilities';
 import { useSortable } from '@dnd-kit/sortable';
 
-import { AdapterIcon, CopyIcon, EditIcon, ModeIcon, TrashIcon } from './icons';
+import { AdapterIcon, CopyIcon, EditIcon, ModeIcon, TrashIcon } from '../icons';
 import type { AgentConfig } from './types';
 
 type AgentCardProps = {

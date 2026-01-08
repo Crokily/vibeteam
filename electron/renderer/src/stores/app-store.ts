@@ -23,6 +23,7 @@ type TaskMeta = {
   executionMode: ExecutionMode;
   label: string;
   stageIndex: number;
+  adapter: string;
 };
 
 type SessionMode = 'live' | 'view';
@@ -46,10 +47,31 @@ const buildWorkflowView = (workflow: WorkflowDefinition) => {
   const taskMeta: Record<string, TaskMeta> = {};
   const workflowStages: WorkflowStageView[] = workflow.stages.map((stage, stageIndex) => {
     const taskIds = stage.tasks.map((task) => {
+      let label = task.name;
+
+      if (!label && task.prompt) {
+        const prompt = task.prompt.trim();
+        // Use first 60 chars of prompt + ... if it's long
+        // Remove newlines to keep it clean in the UI
+        const cleanPrompt = prompt.split('\n')[0].trim();
+        label = cleanPrompt.length > 60 
+          ? cleanPrompt.substring(0, 57) + '...' 
+          : cleanPrompt;
+      }
+
+      if (!label && task.adapter) {
+        // Fallback to adapter name (e.g. "shell_command" -> "Shell Command")
+        label = task.adapter
+          .split(/[_-]/)
+          .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+          .join(' ');
+      }
+
       taskMeta[task.id] = {
         executionMode: task.executionMode ?? 'interactive',
-        label: task.name ?? task.id,
+        label: label ?? task.id,
         stageIndex,
+        adapter: task.adapter,
       };
       return task.id;
     });

@@ -5,7 +5,7 @@ import type {
 } from '../../../../shared/ipc-types';
 import { ipcClient } from '../../lib/ipc-client';
 
-import { AdapterIcon } from './icons';
+import { AdapterIcon } from '../icons';
 
 type FrequentAgentsBarProps = {
   isOpen: boolean;

@@ -1,6 +1,9 @@
+import { AdapterIcon } from '../icons';
+
 type TerminalTab = {
   id: string;
   label: string;
+  adapter: string;
   isActive: boolean;
   needsAttention: boolean;
 };
@@ -23,6 +26,9 @@ export const TerminalTabs = ({ tabs, onSelect }: TerminalTabsProps) => {
               : 'border-border/60 bg-ink/40 text-ash hover:border-iron/60 hover:text-iron'
           }`}
         >
+          <span className="flex h-4 w-4 items-center justify-center rounded bg-black/20 text-current/80">
+            <AdapterIcon name={tab.adapter} className="h-2.5 w-2.5" />
+          </span>
           <span className="max-w-[160px] truncate" title={tab.label}>
             {tab.label}
           </span>
