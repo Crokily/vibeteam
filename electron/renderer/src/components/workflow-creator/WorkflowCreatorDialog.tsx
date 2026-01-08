@@ -969,7 +969,7 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
                 <div className="text-[11px] text-rose-200">{canvasError}</div>
               ) : null}
             </div>
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-3xl border border-border/60 bg-ink/60 px-4 py-4">
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
               <WorkflowCanvas
                 rows={layout.rows}
                 agents={layout.agents}
