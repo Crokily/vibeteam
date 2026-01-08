@@ -78,6 +78,7 @@ export const FrequentAgentsBar = ({
               onClick={() => onAddAgent(entry.config)}
               className="flex min-w-[220px] items-center gap-3 rounded-2xl border border-border/60 bg-ink/70 px-3 py-3 text-left text-ash transition hover:border-amber-300/60 hover:text-iron"
               type="button"
+              title={prompt}
             >
               <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-border/60 bg-graphite/80 text-iron">
                 <AdapterIcon name={icon} className="h-4 w-4" />

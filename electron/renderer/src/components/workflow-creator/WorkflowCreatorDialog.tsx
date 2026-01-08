@@ -493,6 +493,25 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
     });
   };
 
+  const handleUpdateAgent = (id: string, updates: Partial<AgentConfig>) => {
+    setLayout((current) => {
+      const existing = current.agents[id];
+      if (!existing) {
+        return current;
+      }
+      return {
+        ...current,
+        agents: {
+          ...current.agents,
+          [id]: {
+            ...existing,
+            ...updates,
+          },
+        },
+      };
+    });
+  };
+
   const handleClose = () => {
     if (hasChanges && !window.confirm('Discard this workflow draft?')) {
       return;
@@ -927,6 +946,7 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
                   setCanvasError(null);
                 }}
                 onRemoveAgent={handleRemoveAgent}
+                onUpdateAgent={handleUpdateAgent}
               />
             </div>
           </div>

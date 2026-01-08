@@ -26,6 +26,7 @@ type WorkflowCanvasProps = {
   adapterMeta: AdapterMetaLookup;
   onRowsChange: (rows: string[][]) => void;
   onRemoveAgent: (id: string) => void;
+  onUpdateAgent: (id: string, updates: Partial<AgentConfig>) => void;
 };
 
 const rowId = (index: number) => `row-${index}`;
@@ -63,6 +64,7 @@ export const WorkflowCanvas = ({
   adapterMeta,
   onRowsChange,
   onRemoveAgent,
+  onUpdateAgent,
 }: WorkflowCanvasProps) => {
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -168,6 +170,7 @@ export const WorkflowCanvas = ({
                           adapterLabel={meta?.displayName ?? agent.adapter}
                           adapterIcon={meta?.icon ?? 'adapter'}
                           onDelete={onRemoveAgent}
+                          onUpdate={onUpdateAgent}
                         />
                       );
                     })}
