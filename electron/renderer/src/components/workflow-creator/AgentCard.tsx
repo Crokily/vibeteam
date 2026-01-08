@@ -12,6 +12,7 @@ type AgentCardProps = {
   adapterIcon: string;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<AgentConfig>) => void;
+  onDuplicate: (id: string) => void;
 };
 
 export const AgentCard = ({
@@ -21,6 +22,7 @@ export const AgentCard = ({
   adapterIcon,
   onDelete,
   onUpdate,
+  onDuplicate,
 }: AgentCardProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id });
@@ -34,35 +36,6 @@ export const AgentCard = ({
   const promptTitle = agent.prompt?.trim() || 'No prompt';
   const dragAttributes = isEditing ? {} : attributes;
   const dragListeners = isEditing ? {} : listeners;
-
-  const copyPrompt = async () => {
-    const text = agent.prompt ?? '';
-    if (!text) {
-      return;
-    }
-    if (navigator?.clipboard?.writeText) {
-      try {
-        await navigator.clipboard.writeText(text);
-        return;
-      } catch {
-        // Fall through to legacy copy for restricted contexts.
-      }
-    }
-
-    try {
-      const textarea = document.createElement('textarea');
-      textarea.value = text;
-      textarea.setAttribute('readonly', '');
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-    } catch {
-      // Ignore copy failures to avoid blocking UI.
-    }
-  };
 
   useEffect(() => {
     if (!isEditing) {
@@ -100,10 +73,10 @@ export const AgentCard = ({
             onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => {
               event.stopPropagation();
-              void copyPrompt();
+              onDuplicate(id);
             }}
             className="rounded-full border border-border/60 bg-ink/60 p-1 text-ash/70 transition hover:border-iron hover:text-iron"
-            aria-label="Copy prompt"
+            aria-label="Duplicate agent"
             type="button"
           >
             <CopyIcon className="h-4 w-4" />

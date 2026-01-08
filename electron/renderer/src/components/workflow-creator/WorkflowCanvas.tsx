@@ -27,6 +27,7 @@ type WorkflowCanvasProps = {
   onRowsChange: (rows: string[][]) => void;
   onRemoveAgent: (id: string) => void;
   onUpdateAgent: (id: string, updates: Partial<AgentConfig>) => void;
+  onDuplicateAgent: (id: string) => void;
 };
 
 const rowId = (index: number) => `row-${index}`;
@@ -65,6 +66,7 @@ export const WorkflowCanvas = ({
   onRowsChange,
   onRemoveAgent,
   onUpdateAgent,
+  onDuplicateAgent,
 }: WorkflowCanvasProps) => {
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -171,6 +173,7 @@ export const WorkflowCanvas = ({
                           adapterIcon={meta?.icon ?? 'adapter'}
                           onDelete={onRemoveAgent}
                           onUpdate={onUpdateAgent}
+                          onDuplicate={onDuplicateAgent}
                         />
                       );
                     })}

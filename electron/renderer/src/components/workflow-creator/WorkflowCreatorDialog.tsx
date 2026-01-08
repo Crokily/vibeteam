@@ -512,6 +512,39 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
     });
   };
 
+  const handleDuplicateAgent = (id: string) => {
+    setLayout((current) => {
+      const source = current.agents[id];
+      if (!source) {
+        return current;
+      }
+      const newId = `task-${createWorkflowId()}`;
+      const rowIndex = current.rows.findIndex((row) => row.includes(id));
+      let rows = current.rows.map((row) => [...row]);
+
+      if (rowIndex >= 0) {
+        const targetRow = rows[rowIndex];
+        const sourceIndex = targetRow.indexOf(id);
+        targetRow.splice(sourceIndex + 1, 0, newId);
+      } else if (rows.length > 0) {
+        rows[rows.length - 1] = [...rows[rows.length - 1], newId];
+      } else {
+        rows = [[newId]];
+      }
+
+      return {
+        rows,
+        agents: {
+          ...current.agents,
+          [newId]: {
+            ...source,
+            id: newId,
+          },
+        },
+      };
+    });
+  };
+
   const handleClose = () => {
     if (hasChanges && !window.confirm('Discard this workflow draft?')) {
       return;
@@ -947,6 +980,7 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
                 }}
                 onRemoveAgent={handleRemoveAgent}
                 onUpdateAgent={handleUpdateAgent}
+                onDuplicateAgent={handleDuplicateAgent}
               />
             </div>
           </div>
