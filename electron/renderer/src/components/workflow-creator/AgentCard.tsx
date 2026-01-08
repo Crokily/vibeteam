@@ -35,6 +35,35 @@ export const AgentCard = ({
   const dragAttributes = isEditing ? {} : attributes;
   const dragListeners = isEditing ? {} : listeners;
 
+  const copyPrompt = async () => {
+    const text = agent.prompt ?? '';
+    if (!text) {
+      return;
+    }
+    if (navigator?.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return;
+      } catch {
+        // Fall through to legacy copy for restricted contexts.
+      }
+    }
+
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    } catch {
+      // Ignore copy failures to avoid blocking UI.
+    }
+  };
+
   useEffect(() => {
     if (!isEditing) {
       setDraftPrompt(agent.prompt);
@@ -50,7 +79,7 @@ export const AgentCard = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group relative flex w-[220px] flex-col gap-3 rounded-2xl border border-border/60 bg-ink/60 px-4 py-3 text-left text-ash shadow-[0_12px_28px_rgba(0,0,0,0.2)] transition ${
+      className={`group relative flex w-[260px] flex-col gap-3 rounded-2xl border border-border/60 bg-ink/60 px-4 py-3 text-left text-ash shadow-[0_12px_28px_rgba(0,0,0,0.2)] transition ${
         isEditing ? 'cursor-default' : isDragging ? 'cursor-grabbing opacity-80' : 'cursor-grab'
       }`}
       title={promptTitle}
@@ -71,7 +100,7 @@ export const AgentCard = ({
             onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => {
               event.stopPropagation();
-              void navigator.clipboard?.writeText(agent.prompt ?? '').catch(() => undefined);
+              void copyPrompt();
             }}
             className="rounded-full border border-border/60 bg-ink/60 p-1 text-ash/70 transition hover:border-iron hover:text-iron"
             aria-label="Copy prompt"
