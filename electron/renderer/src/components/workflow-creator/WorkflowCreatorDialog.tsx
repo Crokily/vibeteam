@@ -8,7 +8,7 @@ import type {
 import { workflowDefinitionSchema } from '../../../../shared/ipc-schemas';
 import { ipcClient } from '../../lib/ipc-client';
 
-import { AdapterIcon, ChevronDownIcon, ModeIcon } from './icons';
+import { AdapterIcon, ChevronDownIcon, ModeIcon } from '../icons';
 import { FrequentAgentsBar } from './FrequentAgentsBar';
 import { FrequentWorkflowsSidebar } from './FrequentWorkflowsSidebar';
 import { WorkflowCanvas } from './WorkflowCanvas';
@@ -101,10 +101,12 @@ const parseExtraArgs = (
 
 const buildWorkflowDefinition = (
   workflowId: string,
+  workflowName: string,
   baseDir: string,
   layout: LayoutState,
 ): WorkflowDefinition => {
   const trimmedId = workflowId.trim() || createWorkflowId();
+  const trimmedName = workflowName.trim();
   const trimmedBaseDir = baseDir.trim();
 
   const stages = layout.rows
@@ -167,6 +169,7 @@ const buildWorkflowDefinition = (
 
   return {
     id: trimmedId,
+    goal: trimmedName || undefined,
     stages,
   };
 };
@@ -216,6 +219,7 @@ const validateWorkflowDefinition = (
 
 export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialogProps) => {
   const [workflowId, setWorkflowId] = useState(createWorkflowId());
+  const [workflowName, setWorkflowName] = useState('');
   const [baseDir, setBaseDir] = useState('');
   const [adapters, setAdapters] = useState<AdapterMeta[]>([]);
   const [adaptersLoaded, setAdaptersLoaded] = useState(false);
@@ -238,9 +242,10 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
   const adapterMenuRef = useRef<HTMLDivElement | null>(null);
   const initialStateRef = useRef<{
     workflowId: string;
+    workflowName: string;
     selectedAdapter: string;
     mode: ExecutionMode;
-  }>({ workflowId: '', selectedAdapter: '', mode: 'interactive' });
+  }>({ workflowId: '', workflowName: '', selectedAdapter: '', mode: 'interactive' });
   const isInitializingRef = useRef(false);
 
   const adapterMetaLookup = useMemo(() => {
@@ -277,13 +282,14 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
     cwd.trim().length > 0 ||
     envEntries.some((entry) => entry.key.trim() || entry.value.trim()) ||
     importValue.trim().length > 0 ||
-    workflowId.trim() !== initialStateRef.current.workflowId ||
+    workflowName.trim().length > 0 ||
     selectedAdapter !== initialStateRef.current.selectedAdapter ||
     mode !== initialStateRef.current.mode;
 
   const resetState = useCallback(() => {
     const nextWorkflowId = createWorkflowId();
     setWorkflowId(nextWorkflowId);
+    setWorkflowName('');
     setBaseDir('');
     setLayout({ rows: [], agents: {} });
     setPrompt('');
@@ -303,6 +309,7 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
     setAdaptersLoaded(false);
     initialStateRef.current = {
       workflowId: nextWorkflowId,
+      workflowName: '',
       selectedAdapter: '',
       mode: 'interactive',
     };
@@ -553,7 +560,7 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
   };
 
   const handleCreateWorkflow = async () => {
-    const workflow = buildWorkflowDefinition(workflowId, baseDir, layout);
+    const workflow = buildWorkflowDefinition(workflowId, workflowName, baseDir, layout);
     const validationError = validateWorkflowDefinition(
       workflow,
       adapterMetaLookup,
@@ -603,6 +610,7 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
         return;
       }
       setWorkflowId(definition.id);
+      setWorkflowName(definition.goal || '');
       setLayout(buildLayoutFromDefinition(definition));
       setCanvasError(null);
       setImportOpen(false);
@@ -620,6 +628,7 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
       }
     }
     setLayout(buildLayoutFromDefinition(definition));
+    setWorkflowName(definition.goal || '');
     setCanvasError(null);
   };
 
@@ -682,11 +691,12 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
         <div className="grid gap-4 border-b border-border/60 bg-ink/50 px-6 py-4 lg:grid-cols-[minmax(220px,1fr)_minmax(260px,1fr)_auto]">
           <div className="flex flex-col gap-2">
             <label className="text-[10px] uppercase tracking-[0.24em] text-ash">
-              Workflow ID
+              Workflow Name
             </label>
             <input
-              value={workflowId}
-              onChange={(event) => setWorkflowId(event.target.value)}
+              value={workflowName}
+              onChange={(event) => setWorkflowName(event.target.value)}
+              placeholder="Describe your goal (optional)"
               className="rounded-2xl border border-border/60 bg-ink/70 px-4 py-2 text-xs text-iron outline-none transition focus:border-amber-300/70"
             />
           </div>

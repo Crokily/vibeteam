@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import type { OrchestratorState, TaskStatus } from '../../../../shared/ipc-types';
 import type { SessionLayout, SessionState } from '../../stores/app-store';
+import { AdapterIcon } from '../icons';
 import { TerminalTabs } from '../terminal/TerminalTabs';
 import { XTermTerminal } from '../terminal/XTermTerminal';
 
@@ -54,8 +55,12 @@ export const WorkflowColumn = ({
     return () => registerRef(session.sessionId, null);
   }, [registerRef, session.sessionId]);
 
+  const firstTaskId = session.workflowStages[0]?.taskIds[0];
+  const firstTaskLabel = firstTaskId ? session.taskMeta[firstTaskId]?.label : undefined;
+
   const goalLabel =
     session.workflow?.goal?.trim() ||
+    firstTaskLabel ||
     session.workflow?.id ||
     'Untitled workflow';
 
@@ -241,7 +246,9 @@ export const WorkflowColumn = ({
                     >
                       {stage.taskIds.map((taskId) => {
                         const status = session.taskStatuses[taskId] ?? 'PENDING';
-                        const label = session.taskMeta[taskId]?.label ?? taskId;
+                        const meta = session.taskMeta[taskId];
+                        const label = meta?.label ?? taskId;
+                        const adapter = meta?.adapter ?? 'unknown';
                         const isActive = taskId === resolvedActiveTaskId;
                         const needsAttention =
                           attentionTaskIds.has(taskId) || status === 'WAITING_FOR_USER';
@@ -261,16 +268,21 @@ export const WorkflowColumn = ({
                                 : ''
                             }`}
                           >
-                            <span
-                              className={`truncate font-medium ${
-                                isActive ? 'text-iron' : 'text-ash'
-                              }`}
-                              title={label}
-                            >
-                              {label}
+                            <span className="flex min-w-0 items-center gap-2">
+                              <span className="flex h-5 w-5 flex-none items-center justify-center rounded-md bg-black/20 text-current/80">
+                                <AdapterIcon name={adapter} className="h-3 w-3" />
+                              </span>
+                              <span
+                                className={`truncate font-medium ${
+                                  isActive ? 'text-iron' : 'text-ash'
+                                }`}
+                                title={label}
+                              >
+                                {label}
+                              </span>
                             </span>
                             {needsAttention ? (
-                              <span className="relative flex h-2 w-2">
+                              <span className="relative flex h-2 w-2 flex-none">
                                 <span className="absolute inline-flex h-full w-full rounded-full bg-amber-400/40 tab-pulse" />
                                 <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-300" />
                               </span>
@@ -289,6 +301,7 @@ export const WorkflowColumn = ({
               tabs={taskIds.map((taskId) => ({
                 id: taskId,
                 label: session.taskMeta[taskId]?.label ?? taskId,
+                adapter: session.taskMeta[taskId]?.adapter ?? 'unknown',
                 isActive: taskId === resolvedActiveTaskId && panelLayout === 'expanded',
                 needsAttention:
                   attentionTaskIds.has(taskId) ||
