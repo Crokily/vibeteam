@@ -181,7 +181,7 @@ const validateWorkflowDefinition = (
   }
 
   if (validateAdapters && Object.keys(adapterLookup).length === 0) {
-    return 'No adapters available.';
+    return 'No CLIs available.';
   }
 
   const seenTaskIds = new Set<string>();
@@ -196,10 +196,10 @@ const validateWorkflowDefinition = (
         return 'Workflow task is missing an id.';
       }
       if (!task.adapter || !task.adapter.trim()) {
-        return `Workflow task "${task.id}" adapter must be a non-empty string.`;
+        return `Workflow task "${task.id}" CLI must be a non-empty string.`;
       }
       if (validateAdapters && !adapterLookup[task.adapter]) {
-        return `Workflow task "${task.id}" adapter type "${task.adapter}" is not registered.`;
+        return `Workflow task "${task.id}" CLI type "${task.adapter}" is not registered.`;
       }
       if (task.executionMode === 'headless' && (!task.prompt || !task.prompt.trim())) {
         return `Workflow task "${task.id}" prompt is required for headless mode.`;
@@ -419,14 +419,14 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
   }
 
   const selectedAdapterLabel =
-    selectedAdapterMeta?.displayName || selectedAdapter || 'Select adapter';
+    selectedAdapterMeta?.displayName || selectedAdapter || 'Select CLI';
   const selectedAdapterIcon = selectedAdapterMeta?.icon || 'adapter';
 
   const handleCreateAgent = () => {
     const errors: FormErrors = {};
 
     if (!selectedAdapter || !selectedAdapterMeta) {
-      errors.adapter = adapters.length > 0 ? 'Select a valid adapter.' : 'No adapters available.';
+      errors.adapter = adapters.length > 0 ? 'Select a valid CLI.' : 'No CLIs available.';
     }
 
     if (mode === 'headless' && !prompt.trim()) {
@@ -490,6 +490,58 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
         .filter((row) => row.length > 0);
 
       return { rows, agents: rest };
+    });
+  };
+
+  const handleUpdateAgent = (id: string, updates: Partial<AgentConfig>) => {
+    setLayout((current) => {
+      const existing = current.agents[id];
+      if (!existing) {
+        return current;
+      }
+      return {
+        ...current,
+        agents: {
+          ...current.agents,
+          [id]: {
+            ...existing,
+            ...updates,
+          },
+        },
+      };
+    });
+  };
+
+  const handleDuplicateAgent = (id: string) => {
+    setLayout((current) => {
+      const source = current.agents[id];
+      if (!source) {
+        return current;
+      }
+      const newId = `task-${createWorkflowId()}`;
+      const rowIndex = current.rows.findIndex((row) => row.includes(id));
+      let rows = current.rows.map((row) => [...row]);
+
+      if (rowIndex >= 0) {
+        const targetRow = rows[rowIndex];
+        const sourceIndex = targetRow.indexOf(id);
+        targetRow.splice(sourceIndex + 1, 0, newId);
+      } else if (rows.length > 0) {
+        rows[rows.length - 1] = [...rows[rows.length - 1], newId];
+      } else {
+        rows = [[newId]];
+      }
+
+      return {
+        rows,
+        agents: {
+          ...current.agents,
+          [newId]: {
+            ...source,
+            id: newId,
+          },
+        },
+      };
     });
   };
 
@@ -604,7 +656,7 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 px-4 py-6 backdrop-blur">
-      <div className="relative flex h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-border/70 bg-slate/90 shadow-[0_40px_120px_rgba(0,0,0,0.5)]">
+      <div className="relative flex h-[92vh] w-full max-w-7xl flex-col overflow-hidden rounded-3xl border border-border/70 bg-slate/90 shadow-[0_40px_120px_rgba(0,0,0,0.5)]">
         <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border/60 bg-ink/60 px-6 py-4">
           <div className="text-sm uppercase tracking-[0.35em] text-ash">
             New Workflow
@@ -660,13 +712,8 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
           </div>
         </div>
 
-        <div className="grid min-h-0 flex-1 gap-6 overflow-hidden px-6 py-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+        <div className="grid min-h-0 flex-1 gap-4 overflow-hidden px-4 py-4 lg:grid-cols-[300px_minmax(0,1fr)_260px]">
           <div className="flex min-h-0 flex-col gap-4 overflow-y-auto pr-2">
-            <FrequentWorkflowsSidebar
-              isOpen={isOpen}
-              adapterLookup={adapterDisplayLookup}
-              onSelectWorkflow={handleApplyFrequentWorkflow}
-            />
             <div className="rounded-3xl border border-border/60 bg-ink/60 px-4 py-4">
               <div className="text-[11px] uppercase tracking-[0.3em] text-ash">
                 Create Agent
@@ -675,7 +722,7 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
               <div className="mt-4 flex flex-col gap-4">
                 <div className="flex flex-col gap-2" ref={adapterMenuRef}>
                   <label className="text-[10px] uppercase tracking-[0.24em] text-ash">
-                    Adapter
+                    CLI
                   </label>
                   <button
                     onClick={() => setAdapterOpen((open) => !open)}
@@ -703,7 +750,7 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
                     <div className="relative z-10 mt-2 rounded-2xl border border-border/70 bg-ink/90 p-2 shadow-[0_18px_40px_rgba(0,0,0,0.4)]">
                       {adapters.length === 0 ? (
                         <div className="px-3 py-2 text-[11px] text-ash">
-                          No adapters
+                          No CLIs
                         </div>
                       ) : (
                         adapters.map((adapter) => (
@@ -913,7 +960,7 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
             </div>
           </div>
 
-          <div className="flex min-h-0 flex-col gap-4">
+          <div className="flex min-h-0 flex-col gap-3">
             <div className="flex items-center justify-between">
               <div className="text-[11px] uppercase tracking-[0.3em] text-ash">
                 Workflow Canvas
@@ -922,7 +969,7 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
                 <div className="text-[11px] text-rose-200">{canvasError}</div>
               ) : null}
             </div>
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-3xl border border-border/60 bg-ink/60 px-4 py-4">
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-1">
               <WorkflowCanvas
                 rows={layout.rows}
                 agents={layout.agents}
@@ -932,8 +979,18 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
                   setCanvasError(null);
                 }}
                 onRemoveAgent={handleRemoveAgent}
+                onUpdateAgent={handleUpdateAgent}
+                onDuplicateAgent={handleDuplicateAgent}
               />
             </div>
+          </div>
+
+          <div className="flex min-h-0 flex-col gap-4 overflow-y-auto pr-2">
+            <FrequentWorkflowsSidebar
+              isOpen={isOpen}
+              adapterLookup={adapterDisplayLookup}
+              onSelectWorkflow={handleApplyFrequentWorkflow}
+            />
           </div>
         </div>
 

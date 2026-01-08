@@ -59,10 +59,35 @@ export const FrequentWorkflowsSidebar = ({
           tasks.find((task) => task.prompt?.trim())?.prompt?.trim() ??
           'Untitled workflow';
         const icons = tasks.map((task) => adapterLookup[task.adapter]?.icon ?? 'adapter');
+        const stageCount = entry.definition.stages.length;
+        const taskCount = tasks.length;
+        const metaLabel = `${stageCount} stage${stageCount === 1 ? '' : 's'}, ${taskCount} agent${
+          taskCount === 1 ? '' : 's'
+        }`;
+        const agentLabels = tasks
+          .map(
+            (task) =>
+              task.name?.trim() ||
+              task.prompt?.trim() ||
+              adapterLookup[task.adapter]?.displayName ||
+              task.adapter ||
+              task.id,
+          )
+          .filter(Boolean);
+        const agentSummary = agentLabels.slice(0, 3).join(' • ');
+        const agentSuffix =
+          agentLabels.length > 3 ? ` +${agentLabels.length - 3} more` : '';
+        const headline =
+          entry.definition.goal?.trim() || entry.definition.id || prompt;
+        const summaryParts = [headline, metaLabel];
+        if (agentSummary) {
+          summaryParts.push(`Agents: ${agentSummary}${agentSuffix}`);
+        }
         return {
           entry,
           prompt,
           icons,
+          summary: summaryParts.join(' — '),
         };
       }),
     [adapterLookup, workflows],
@@ -79,12 +104,13 @@ export const FrequentWorkflowsSidebar = ({
             No frequent workflows yet.
           </div>
         ) : (
-          items.map(({ entry, prompt, icons }) => (
+          items.map(({ entry, prompt, icons, summary }) => (
             <button
               key={entry.hash}
               onClick={() => onSelectWorkflow(entry.definition)}
               className="group flex w-full items-center gap-3 rounded-2xl border border-border/60 bg-ink/70 px-3 py-3 text-left text-ash transition hover:border-amber-300/60 hover:text-iron"
               type="button"
+              title={summary}
             >
               <span className="flex items-center -space-x-2">
                 {icons.slice(0, maxIcons).map((icon, index) => (

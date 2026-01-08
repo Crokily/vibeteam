@@ -26,6 +26,8 @@ type WorkflowCanvasProps = {
   adapterMeta: AdapterMetaLookup;
   onRowsChange: (rows: string[][]) => void;
   onRemoveAgent: (id: string) => void;
+  onUpdateAgent: (id: string, updates: Partial<AgentConfig>) => void;
+  onDuplicateAgent: (id: string) => void;
 };
 
 const rowId = (index: number) => `row-${index}`;
@@ -48,7 +50,7 @@ const RowDropZone = ({
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-2xl border border-dashed px-3 py-3 transition ${
+      className={`rounded-2xl border border-dashed px-2 py-2 transition ${
         isOver ? 'border-iron/60 bg-ink/70' : 'border-border/40 bg-ink/40'
       } ${isEmpty ? 'min-h-[120px]' : ''}`}
     >
@@ -63,6 +65,8 @@ export const WorkflowCanvas = ({
   adapterMeta,
   onRowsChange,
   onRemoveAgent,
+  onUpdateAgent,
+  onDuplicateAgent,
 }: WorkflowCanvasProps) => {
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -133,7 +137,7 @@ export const WorkflowCanvas = ({
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -146,14 +150,14 @@ export const WorkflowCanvas = ({
             </div>
           </RowDropZone>
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
             {rows.map((row, rowIndex) => (
               <RowDropZone key={rowId(rowIndex)} id={rowId(rowIndex)}>
                 <SortableContext
                   items={row}
                   strategy={horizontalListSortingStrategy}
                 >
-                  <div className="flex flex-wrap gap-3">
+                  <div className="flex flex-wrap gap-2">
                     {row.map((agentId) => {
                       const agent = agents[agentId];
                       if (!agent) {
@@ -168,6 +172,8 @@ export const WorkflowCanvas = ({
                           adapterLabel={meta?.displayName ?? agent.adapter}
                           adapterIcon={meta?.icon ?? 'adapter'}
                           onDelete={onRemoveAgent}
+                          onUpdate={onUpdateAgent}
+                          onDuplicate={onDuplicateAgent}
                         />
                       );
                     })}

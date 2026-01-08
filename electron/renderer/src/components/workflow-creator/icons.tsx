@@ -93,6 +93,32 @@ export const TrashIcon = ({ className }: IconProps) => (
   </svg>
 );
 
+export const CopyIcon = ({ className }: IconProps) => (
+  <svg
+    viewBox="0 0 24 24"
+    className={className}
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.6"
+  >
+    <rect x="9" y="9" width="10" height="10" rx="2" />
+    <path d="M5 15V7a2 2 0 0 1 2-2h8" />
+  </svg>
+);
+
+export const EditIcon = ({ className }: IconProps) => (
+  <svg
+    viewBox="0 0 24 24"
+    className={className}
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.6"
+  >
+    <path d="M4 20l4.5-1 9-9-3.5-3.5-9 9L4 20z" />
+    <path d="M13.5 6.5l3.5 3.5" />
+  </svg>
+);
+
 export const ChevronDownIcon = ({ className }: IconProps) => (
   <svg
     viewBox="0 0 24 24"
