@@ -4,6 +4,11 @@ import { describe, expect, it } from 'vitest';
 import { CodexAdapter } from './index';
 
 describe('CodexAdapter', () => {
+  it('has the correct class name', () => {
+    const adapter = new CodexAdapter();
+    expect(adapter.constructor.name).toBe('CodexAdapter');
+  });
+
   it('builds headless args with positional prompt', () => {
     const adapter = new CodexAdapter();
     const config = adapter.getLaunchConfig('headless', 'Fix the CI failure');

@@ -45,14 +45,13 @@ Adapters SHALL resolve configuration paths reliably regardless of execution cont
 - **THEN** it resolves paths relative to the project root/CWD, avoiding fragile `__dirname` references
 
 ### Requirement: Extensible Adapter Architecture
-New CLI adapters MUST be implemented by extending a common base class (e.g., `BaseCLIAdapter`) to inherit standard stream handling, buffering, and event management logic. Adapters SHOULD use the shared `AdapterConfigLoader` to ensure consistent configuration parsing and metadata defaults. Adapter types MUST be registered with the `AdapterRegistry` to be usable in workflow tasks.
+New CLI adapters MUST be implemented using the `createCLIAdapter` factory, which returns a `BaseCLIAdapter` subclass with shared stream handling, buffering, and event management logic. When adapter-specific behavior cannot be expressed through the factory, adapters MAY extend `BaseCLIAdapter` directly but MUST still use the shared `AdapterConfigLoader` to ensure consistent configuration parsing and metadata defaults. Adapter types MUST be registered with the `AdapterRegistry` to be usable in workflow tasks.
 
 #### Scenario: Minimal Implementation
-- **WHEN** a developer adds a new CLI adapter
-- **THEN** they only need to implement command configuration and argument parsing
-- **AND** do not need to rewrite buffer management or sniffer logic
-- **AND** reuse the shared configuration loader for parsing adapter config files
-- **AND** register the adapter type with the registry for workflow integration
+- **WHEN** a developer adds a new CLI adapter with a `config.json` and a single `createCLIAdapter` call
+- **THEN** configuration parsing, sniffer setup, and error logging are handled centrally
+- **AND** the adapter inherits standard stream handling and event management logic
+- **AND** the adapter type is registered with the registry for workflow integration
 
 ### Requirement: Adapter Registry
 The system SHALL provide an `AdapterRegistry` to manage adapter type registration and instance creation, enabling dynamic adapter instantiation by type name.
