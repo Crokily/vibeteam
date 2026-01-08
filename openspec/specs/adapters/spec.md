@@ -45,13 +45,19 @@ Adapters SHALL resolve configuration paths reliably regardless of execution cont
 - **THEN** it resolves paths relative to the project root/CWD, avoiding fragile `__dirname` references
 
 ### Requirement: Extensible Adapter Architecture
-New CLI adapters MUST be implemented using the `createCLIAdapter` factory, which returns a `BaseCLIAdapter` subclass with shared stream handling, buffering, and event management logic. When adapter-specific behavior cannot be expressed through the factory, adapters MAY extend `BaseCLIAdapter` directly but MUST still use the shared `AdapterConfigLoader` to ensure consistent configuration parsing and metadata defaults. Adapter types MUST be registered with the `AdapterRegistry` to be usable in workflow tasks.
+New CLI adapters MUST be implemented using the `createCLIAdapter` factory, which automatically handles configuration loading, static metadata attachment, and error logging. The factory returns a `BaseCLIAdapter` subclass with shared stream handling, buffering, and event management logic. All built-in adapters MUST be exported via a unified facade (`src/adapters/index.ts`) which exposes a `registerBuiltInAdapters` function to handle centralized registration.
 
 #### Scenario: Minimal Implementation
 - **WHEN** a developer adds a new CLI adapter with a `config.json` and a single `createCLIAdapter` call
 - **THEN** configuration parsing, sniffer setup, and error logging are handled centrally
+- **AND** metadata (displayName, icon, supportedModes) is statically attached to the adapter class
 - **AND** the adapter inherits standard stream handling and event management logic
-- **AND** the adapter type is registered with the registry for workflow integration
+- **AND** the adapter is added to the unified registration facade
+
+#### Scenario: Centralized Registration
+- **WHEN** the application starts up
+- **THEN** it calls `registerBuiltInAdapters()` from the facade
+- **AND** all built-in adapters are registered with the `AdapterRegistry` automatically
 
 ### Requirement: Adapter Registry
 The system SHALL provide an `AdapterRegistry` to manage adapter type registration and instance creation, enabling dynamic adapter instantiation by type name.
