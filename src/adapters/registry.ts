@@ -34,11 +34,14 @@ export class AdapterRegistry {
     if (!type || !type.trim()) {
       throw new Error('Adapter type is required.');
     }
+    const ctorMetadata = (ctor as AdapterConstructor & { metadata?: AdapterMetadataInput })
+      .metadata;
+    const resolvedMetadata = metadata ?? ctorMetadata;
     this.registry.set(type, ctor);
     this.metadata.set(type, {
-      displayName: metadata?.displayName ?? type,
-      icon: metadata?.icon ?? DEFAULT_ICON,
-      supportedModes: metadata?.supportedModes ?? [],
+      displayName: resolvedMetadata?.displayName ?? type,
+      icon: resolvedMetadata?.icon ?? DEFAULT_ICON,
+      supportedModes: resolvedMetadata?.supportedModes ?? [],
     });
   }
 

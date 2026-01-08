@@ -1,29 +1,11 @@
 export * from './orchestrator';
 
 import { adapterRegistry } from './adapters/registry';
-import type { ExecutionMode, ModesConfig } from './adapters/IAgentAdapter';
 import { GeminiAdapter } from './adapters/gemini';
-import { loadAdapterConfig } from './adapters/base/AdapterConfigLoader';
-import geminiEmbeddedConfig from './adapters/gemini/config.json';
 import { CodexAdapter } from './adapters/codex';
-import codexEmbeddedConfig from './adapters/codex/config.json';
 
-const resolveSupportedModes = (modes: ModesConfig): ExecutionMode[] =>
-  (['interactive', 'headless'] as const).filter((mode) => !!modes[mode]);
-
-const geminiConfig = loadAdapterConfig('gemini', geminiEmbeddedConfig);
-const codexConfig = loadAdapterConfig('codex', codexEmbeddedConfig);
-
-adapterRegistry.register('gemini', GeminiAdapter, {
-  displayName: geminiConfig.metadata.displayName,
-  icon: geminiConfig.metadata.icon,
-  supportedModes: resolveSupportedModes(geminiConfig.modes),
-});
-adapterRegistry.register('codex', CodexAdapter, {
-  displayName: codexConfig.metadata.displayName,
-  icon: codexConfig.metadata.icon,
-  supportedModes: resolveSupportedModes(codexConfig.modes),
-});
+adapterRegistry.register('gemini', GeminiAdapter);
+adapterRegistry.register('codex', CodexAdapter);
 
 export type { AgentLaunchConfig, IAgentAdapter } from './adapters/IAgentAdapter';
 export { AdapterRegistry, adapterRegistry } from './adapters/registry';
