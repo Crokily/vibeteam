@@ -712,7 +712,7 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
           </div>
         </div>
 
-        <div className="grid min-h-0 flex-1 gap-6 overflow-hidden px-6 py-6 lg:grid-cols-[320px_minmax(0,1fr)_280px]">
+        <div className="grid min-h-0 flex-1 gap-4 overflow-hidden px-4 py-4 lg:grid-cols-[300px_minmax(0,1fr)_260px]">
           <div className="flex min-h-0 flex-col gap-4 overflow-y-auto pr-2">
             <div className="rounded-3xl border border-border/60 bg-ink/60 px-4 py-4">
               <div className="text-[11px] uppercase tracking-[0.3em] text-ash">
@@ -960,7 +960,7 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
             </div>
           </div>
 
-          <div className="flex min-h-0 flex-col gap-4">
+          <div className="flex min-h-0 flex-col gap-3">
             <div className="flex items-center justify-between">
               <div className="text-[11px] uppercase tracking-[0.3em] text-ash">
                 Workflow Canvas
@@ -969,7 +969,7 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
                 <div className="text-[11px] text-rose-200">{canvasError}</div>
               ) : null}
             </div>
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-1">
               <WorkflowCanvas
                 rows={layout.rows}
                 agents={layout.agents}
