@@ -1,5 +1,6 @@
 import { GeminiAdapter } from './gemini';
 import { CodexAdapter } from './codex';
+import { ClaudeAdapter } from './claude';
 import { MockAdapter } from './MockAdapter';
 import { adapterRegistry } from './registry';
 
@@ -9,6 +10,9 @@ export const registerBuiltInAdapters = (): void => {
   }
   if (!adapterRegistry.has('codex')) {
     adapterRegistry.register('codex', CodexAdapter);
+  }
+  if (!adapterRegistry.has('claude')) {
+    adapterRegistry.register('claude', ClaudeAdapter);
   }
   if (!adapterRegistry.has('mock')) {
     adapterRegistry.register('mock', MockAdapter, {

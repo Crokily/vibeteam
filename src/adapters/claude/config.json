@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "displayName": "Claude Code",
+    "icon": "claude"
+  },
+  "states": {
+    "interaction_idle": {
+      "pattern": "^>\\s*",
+      "flags": "m",
+      "description": "Claude Code input prompt"
+    },
+    "interaction_handler": {
+      "pattern": "(Do you want to create|Yes, allow all edits during this session)",
+      "flags": "i",
+      "description": "Claude Code confirmation menu"
+    }
+  },
+  "modes": {
+    "interactive": {
+      "baseArgs": [],
+      "promptPosition": "last"
+    },
+    "headless": {
+      "baseArgs": ["-p", "--dangerously-skip-permissions"],
+      "promptPosition": "last"
+    }
+  }
+}
