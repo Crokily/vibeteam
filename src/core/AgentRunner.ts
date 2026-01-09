@@ -15,6 +15,21 @@ export type AgentExit = {
   signal?: number | string | null;
 };
 
+const formatLaunchDetails = (config: AgentLaunchConfig): string => {
+  const args = config.args ?? [];
+  const cwd = config.cwd ?? process.cwd();
+  const envPath = config.env?.PATH ?? process.env.PATH ?? '';
+  return [
+    `command=${config.command}`,
+    `args=${JSON.stringify(args)}`,
+    `cwd=${cwd}`,
+    `PATH=${envPath}`,
+    `platform=${process.platform}`,
+    `arch=${process.arch}`,
+    `execPath=${process.execPath}`,
+  ].join(' ');
+};
+
 export class AgentRunner extends EventEmitter {
   private ptyProcess: pty.IPty | null = null;
 
@@ -31,8 +46,10 @@ export class AgentRunner extends EventEmitter {
     }
 
     const config = this.launchConfig;
+    const launchDetails = formatLaunchDetails(config);
 
     try {
+      console.log(`[AgentRunner] spawn ${launchDetails}`);
       const ptyProcess = pty.spawn(config.command, config.args ?? [], {
         name: config.name ?? 'xterm-color',
         cols: config.cols ?? 80,
@@ -76,12 +93,18 @@ export class AgentRunner extends EventEmitter {
       });
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      const agentEvent: AgentEvent = { type: 'error', error: err };
+      const debugMessage = `[AgentRunner] spawn failed ${launchDetails}`;
+      const debugError = new Error(`${debugMessage}\n${err.message}`);
+      if (err.stack) {
+        debugError.stack = `${debugMessage}\n${err.stack}`;
+      }
+      const agentEvent: AgentEvent = { type: 'error', error: debugError };
 
-      this.adapter.onError?.(err);
+      console.error(debugMessage);
+      this.adapter.onError?.(debugError);
       this.emit('event', agentEvent);
 
-      throw err;
+      throw debugError;
     }
   }
 

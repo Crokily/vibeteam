@@ -143,6 +143,7 @@ export const handleRunnerEvent = (
   }
 
   if (event.type === 'error') {
+    deps.emit('error', event.error);
     deps.updateTaskStatus(taskId, 'ERROR');
     cleanupRunner(deps, taskId);
     context.reject(event.error);

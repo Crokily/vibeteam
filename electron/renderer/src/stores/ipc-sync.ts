@@ -15,6 +15,11 @@ export const connectIpcToStore = (): (() => void) => {
     setError,
   } = useAppStore.getState();
 
+  const handleError = (payload: Parameters<typeof setError>[0]) => {
+    console.error('[orchestrator:error]', payload);
+    setError(payload);
+  };
+
   setConnected(true);
 
   const unsubscribers = [
@@ -31,7 +36,7 @@ export const connectIpcToStore = (): (() => void) => {
     window.electronAPI.events.on('orchestrator:taskStatusChange', updateTaskStatus),
     window.electronAPI.events.on('orchestrator:taskOutput', appendTaskOutput),
     window.electronAPI.events.on('orchestrator:interactionNeeded', addInteraction),
-    window.electronAPI.events.on('orchestrator:error', setError),
+    window.electronAPI.events.on('orchestrator:error', handleError),
   ];
 
   return () => {

@@ -20,6 +20,7 @@ import {
   handleRunnerEvent,
   TaskRunnerDeps,
 } from './taskRunnerHandlers';
+import { getShellEnv } from '../../utils/shell-env';
 
 export type TaskRunnerOptions = {
   runnerFactory?: RunnerFactory;
@@ -67,8 +68,9 @@ export class TaskRunner extends EventEmitter {
     );
     const modeConfig = adapter.getModeConfig?.(executionMode);
     const usePty = !!modeConfig?.usePty;
+    const shellEnv = getShellEnv();
     const baseEnv = {
-      ...process.env,
+      ...shellEnv,
       ...(launchConfig.env ?? {}),
     };
     if (executionMode === 'interactive' || usePty) {

@@ -3,8 +3,10 @@ import { join } from 'path';
 import { registerIpcHandlers } from './ipc';
 import { initOrchestrator, shutdownOrchestrator } from './orchestrator';
 import { registerWindowStateHandlers, resolveWindowOptions } from './window-state';
+import { ensureProcessPath } from './process-env';
 
 console.log('[Main] Starting Electron main process...');
+ensureProcessPath();
 
 const createWindow = (): BrowserWindow => {
   console.log('[Main] Creating window...');
