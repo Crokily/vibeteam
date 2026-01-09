@@ -22,7 +22,8 @@
     },
     "headless": {
       "baseArgs": ["-p", "--dangerously-skip-permissions"],
-      "promptPosition": "last"
+      "promptPosition": "last",
+      "usePty": true
     }
   }
 }

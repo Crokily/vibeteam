@@ -76,6 +76,7 @@ export type RunnerContext = {
 export type RunnerFactoryContext = {
   executionMode: ExecutionMode;
   prompt?: string;
+  usePty?: boolean;
 };
 
 export type RunnerFactory = (

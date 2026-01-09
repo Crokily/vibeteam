@@ -147,7 +147,9 @@ const loadModesConfig = (
       baseArgs?: unknown;
       promptPosition?: unknown;
       promptFlag?: unknown;
+      usePty?: unknown;
     };
+    const usePty = (modeData as { usePty?: unknown }).usePty;
 
     if (!Array.isArray(baseArgs)) {
       errors.push(`Invalid mode "${modeName}" in ${sourceLabel}: "baseArgs" must be an array.`);
@@ -165,6 +167,7 @@ const loadModesConfig = (
       baseArgs: baseArgs.filter((arg): arg is string => typeof arg === 'string'),
       promptPosition,
       promptFlag: typeof promptFlag === 'string' ? promptFlag : undefined,
+      usePty: typeof usePty === 'boolean' ? usePty : undefined,
     };
   }
 

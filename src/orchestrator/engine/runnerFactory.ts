@@ -19,15 +19,17 @@ export const createRunner = (
   launchConfig: AgentLaunchConfig,
   executionMode: ExecutionMode,
   prompt?: string,
+  usePty?: boolean,
 ): AgentRunnerLike => {
   if (runnerFactory) {
     return runnerFactory(adapter, taskId, launchConfig, {
       executionMode,
       prompt,
+      usePty,
     });
   }
 
-  if (executionMode === 'headless') {
+  if (executionMode === 'headless' && !usePty) {
     return new HeadlessRunner(adapter, launchConfig);
   }
 

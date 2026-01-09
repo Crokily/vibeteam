@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 
-import { ExecutionMode } from '../../adapters/IAgentAdapter';
+import type { ExecutionMode } from '../../adapters/IAgentAdapter';
 import { adapterRegistry } from '../../adapters/registry';
 import { SessionManager } from '../state/SessionManager';
 import { TaskStatus } from '../state/WorkflowSession';
@@ -26,7 +26,6 @@ export type TaskRunnerOptions = {
 };
 
 const DEFAULT_EXECUTION_MODE: ExecutionMode = 'interactive';
-
 export class TaskRunner extends EventEmitter {
   private readonly sessionManager: SessionManager;
   private readonly runnerFactory?: RunnerFactory;
@@ -66,11 +65,13 @@ export class TaskRunner extends EventEmitter {
       prompt,
       task.extraArgs,
     );
+    const modeConfig = adapter.getModeConfig?.(executionMode);
+    const usePty = !!modeConfig?.usePty;
     const baseEnv = {
       ...process.env,
       ...(launchConfig.env ?? {}),
     };
-    if (executionMode === 'interactive') {
+    if (executionMode === 'interactive' || usePty) {
       if (!baseEnv.TERM) {
         baseEnv.TERM = 'xterm-256color';
       }
@@ -86,6 +87,7 @@ export class TaskRunner extends EventEmitter {
       launchConfig,
       executionMode,
       prompt,
+      usePty,
     );
     const adapterEmitter = asEmitter(adapter);
     const handlerDeps = this.getHandlerDeps();

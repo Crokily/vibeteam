@@ -40,6 +40,7 @@ export class HeadlessRunner extends EventEmitter {
       });
 
       this.child = child;
+      child.stdin.end();
 
       const handleData = (chunk: Buffer) => {
         const raw = chunk.toString('utf8');

@@ -36,7 +36,7 @@ type WorkflowColumnProps = {
 const layoutWidths: Record<SessionLayout, string> = {
   minimized: 'w-[72px]',
   standard: 'w-[360px]',
-  expanded: 'w-[980px]',
+  expanded: 'w-[1200px]',
 };
 
 export const WorkflowColumn = ({

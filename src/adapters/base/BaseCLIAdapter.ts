@@ -72,6 +72,10 @@ export abstract class BaseCLIAdapter extends EventEmitter implements IAgentAdapt
     };
   }
 
+  getModeConfig(mode: ExecutionMode): ModeConfig | undefined {
+    return this.modes[mode];
+  }
+
   private buildArgs(
     modeConfig: ModeConfig | undefined,
     prompt?: string,

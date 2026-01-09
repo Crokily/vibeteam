@@ -6,6 +6,7 @@ export type ModeConfig = {
   baseArgs: string[];
   promptPosition: 'last' | 'flag';
   promptFlag?: string;
+  usePty?: boolean;
 };
 
 export type ModesConfig = {
@@ -35,6 +36,7 @@ export interface IAgentAdapter extends EventEmitter {
     prompt?: string,
     extraArgs?: string[],
   ): AgentLaunchConfig;
+  getModeConfig?(mode: ExecutionMode): ModeConfig | undefined;
   onRawOutput?(data: string): void;
   onCleanOutput?(data: string): void;
   onExit?(code: number | null, signal?: number | string | null): void;

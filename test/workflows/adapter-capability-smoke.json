@@ -1,0 +1,87 @@
+{
+  "id": "adapter-capability-smoke",
+  "goal": "Smoke test adapters: headless operations plus interactive prompts with parallel and serial stages.",
+  "stages": [
+    {
+      "id": "headless-parallel",
+      "tasks": [
+        {
+          "id": "headless-gemini",
+          "adapter": "gemini",
+          "executionMode": "headless",
+          "cwd": "test",
+          "prompt": "Create a markdown file named adapter-headless-gemini.md in the current directory with exactly one line: \"- Vue has a gentle learning curve.\" Then exit."
+        },
+        {
+          "id": "headless-codex",
+          "adapter": "codex",
+          "executionMode": "headless",
+          "cwd": "test",
+          "prompt": "Create a markdown file named adapter-headless-codex.md in the current directory with exactly one line: \"- Vue has a gentle learning curve.\" Then exit."
+        },
+        {
+          "id": "headless-claude",
+          "adapter": "claude",
+          "executionMode": "headless",
+          "cwd": "test",
+          "prompt": "Create a markdown file named adapter-headless-claude.md in the current directory with exactly one line: \"- Vue has a gentle learning curve.\" Then exit."
+        },
+        {
+          "id": "headless-opencode",
+          "adapter": "opencode",
+          "executionMode": "headless",
+          "cwd": "test",
+          "prompt": "Create a markdown file named adapter-headless-opencode.md in the current directory with exactly one line: \"- Vue has a gentle learning curve.\" Then exit."
+        }
+      ]
+    },
+    {
+      "id": "interactive-gemini",
+      "tasks": [
+        {
+          "id": "interactive-gemini",
+          "adapter": "gemini",
+          "executionMode": "interactive",
+          "cwd": "test",
+          "prompt": "Create a markdown file named adapter-interactive-gemini.md in the current directory with exactly one line: \"- React has a rich ecosystem.\" Then wait for my next input."
+        }
+      ]
+    },
+    {
+      "id": "interactive-codex",
+      "tasks": [
+        {
+          "id": "interactive-codex",
+          "adapter": "codex",
+          "executionMode": "interactive",
+          "cwd": "test",
+          "prompt": "Create a markdown file named adapter-interactive-codex.md in the current directory with exactly one line: \"- React has a rich ecosystem.\" Then wait for my next input."
+        }
+      ]
+    },
+    {
+      "id": "interactive-claude",
+      "tasks": [
+        {
+          "id": "interactive-claude",
+          "adapter": "claude",
+          "executionMode": "interactive",
+          "cwd": "test",
+          "prompt": "Create a markdown file named adapter-interactive-claude.md in the current directory with exactly one line: \"- React has a rich ecosystem.\" Then wait for my next input."
+        }
+      ]
+    },
+    {
+      "id": "interactive-opencode",
+      "tasks": [
+        {
+          "id": "interactive-opencode",
+          "adapter": "opencode",
+          "executionMode": "interactive",
+          "cwd": "test",
+          "prompt": "Create a markdown file named adapter-interactive-opencode.md in the current directory with exactly one line: \"- React has a rich ecosystem.\" Then wait for my next input."
+        }
+      ]
+    }
+  ]
+}

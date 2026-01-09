@@ -23,7 +23,8 @@
     },
     "headless": {
       "baseArgs": ["run"],
-      "promptPosition": "last"
+      "promptPosition": "last",
+      "usePty": true
     }
   }
 }
