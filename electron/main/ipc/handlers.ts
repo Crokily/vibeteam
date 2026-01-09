@@ -25,12 +25,8 @@ import { sendIpcEvent } from './events';
 type CoreSession = ReturnType<SessionManager['getSession']>;
 
 const resolveBaseDir = (): string => app.getPath('userData');
-const usageStatsService = new UsageStatsService();
-
-const getUsageStatsService = (): UsageStatsService => {
-  usageStatsService.setBaseDir(resolveBaseDir());
-  return usageStatsService;
-};
+const getUsageStatsService = (): UsageStatsService =>
+  new UsageStatsService({ baseDir: resolveBaseDir() });
 
 const resolveSessionStatus = (taskStatus: Record<string, TaskStatus>): TaskStatus => {
   const statuses = Object.values(taskStatus);
