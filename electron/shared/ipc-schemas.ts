@@ -187,10 +187,9 @@ export const ipcCommandSchemas = {
   'session:load': z.tuple([z.string()]),
   'session:resume': z.tuple([z.string()]),
   'session:delete': z.tuple([z.string()]),
-  'stats:get-top-workflows': z.tuple([z.number().int().min(1)]),
-  'stats:get-top-agents': z.tuple([z.number().int().min(1)]),
-  'config:get': z.tuple([appConfigKeySchema]),
-  'config:set': z.tuple([appConfigKeySchema, z.unknown()]),
+  'stats:get-top-workflows': z.tuple([z.number()]),
+  'stats:get-top-agents': z.tuple([z.number()]),
+  'dialog:open-directory': z.tuple([]),
 } as const;
 
 export const ipcEventSchemas = {

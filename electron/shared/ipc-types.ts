@@ -147,6 +147,7 @@ export type IpcCommands = {
   'session:delete': (sessionId: string) => Promise<void>;
   'stats:get-top-workflows': (limit: number) => Promise<WorkflowUsageEntry[]>;
   'stats:get-top-agents': (limit: number) => Promise<AgentUsageEntry[]>;
+  'dialog:open-directory': () => Promise<string | null>;
   'config:get': <K extends keyof AppConfig>(key: K) => Promise<AppConfig[K]>;
   'config:set': <K extends keyof AppConfig>(key: K, value: AppConfig[K]) => Promise<void>;
 };

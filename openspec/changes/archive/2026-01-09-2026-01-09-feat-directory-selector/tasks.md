@@ -1,0 +1,4 @@
+- [x] 1. Define `dialog:open-directory` in `ipc-types.ts` and `ipc-schemas.ts`. <!-- id: 1 -->
+- [x] 2. Implement IPC handler in `electron/main/ipc/handlers.ts`. <!-- id: 2 -->
+- [x] 3. Expose method in `electron/renderer/src/lib/ipc-client.ts` and `preload/index.ts`. <!-- id: 3 -->
+- [x] 4. Update `WorkflowCreatorDialog.tsx` to use the selector for Base Directory and Agent CWD. <!-- id: 4 -->

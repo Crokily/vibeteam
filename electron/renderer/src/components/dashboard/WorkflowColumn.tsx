@@ -36,7 +36,7 @@ type WorkflowColumnProps = {
 const layoutWidths: Record<SessionLayout, string> = {
   minimized: 'w-[72px]',
   standard: 'w-[360px]',
-  expanded: 'w-[1200px]',
+  expanded: 'w-[900px]',
 };
 
 export const WorkflowColumn = ({
@@ -134,7 +134,7 @@ export const WorkflowColumn = ({
 
   const taskPanelClasses =
     panelLayout === 'expanded'
-      ? 'flex-none w-[300px] border-r border-border/40'
+      ? 'flex-none w-[260px] border-r border-border/40'
       : 'flex-1';
 
   const terminalPanelClasses =

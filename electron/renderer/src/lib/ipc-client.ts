@@ -47,6 +47,9 @@ export const ipcClient = {
     getTopAgents: (limit: number): Promise<AgentUsageEntry[]> =>
       getApi().stats.getTopAgents(limit),
   },
+  dialog: {
+    openDirectory: (): Promise<string | null> => getApi().dialog.openDirectory(),
+  },
   config: {
     get: <K extends keyof AppConfig>(key: K) => getApi().config.get(key),
     set: <K extends keyof AppConfig>(key: K, value: AppConfig[K]) =>

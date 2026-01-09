@@ -1,0 +1,2 @@
+- [x] 1. Implement `pruneSessions` in `src/orchestrator/state/SessionManager.ts`. <!-- id: 1 -->
+- [x] 2. Verify pruning logic with a unit test in `src/orchestrator/state/SessionManager.test.ts`. <!-- id: 2 -->

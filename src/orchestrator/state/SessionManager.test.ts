@@ -72,4 +72,44 @@ describe('SessionManager', () => {
       'do something',
     );
   });
+
+  it('prunes old sessions when limit is exceeded', () => {
+    // MAX_SESSIONS is 50. We'll create 55 sessions.
+    const sessionsToCreate = 55;
+    const createdIds: string[] = [];
+
+    for (let i = 0; i < sessionsToCreate; i++) {
+      const manager = SessionManager.create(`prune-test-${i}`, { baseDir: TEST_DIR });
+      manager.persist();
+      createdIds.push(manager.getSession().id);
+      
+      // Ensure distinct mtimes for stable sorting on fast systems
+      const filePath = SessionManager.getSessionPath(manager.getSession().id, TEST_DIR);
+      const fs = require('fs');
+      const time = new Date();
+      time.setSeconds(time.getSeconds() + i); // artificially space them out
+      fs.utimesSync(filePath, time, time);
+    }
+
+    const sessionDir = SessionManager.getSessionDir(TEST_DIR);
+    const fs = require('fs');
+    const files = fs
+      .readdirSync(sessionDir)
+      .filter((f: string) => f.endsWith('.json'));
+
+    expect(files.length).toBe(50);
+
+    // The first 5 sessions (index 0-4) should have been pruned.
+    // The sessions with index 5-54 (50 sessions) should remain.
+    const remainingIds = files.map((f: string) => path.basename(f, '.json'));
+    
+    // Check that the newest ones are present
+    expect(remainingIds).toContain(createdIds[54]);
+    expect(remainingIds).toContain(createdIds[50]);
+    expect(remainingIds).toContain(createdIds[5]);
+    
+    // Check that the oldest ones are gone
+    expect(remainingIds).not.toContain(createdIds[0]);
+    expect(remainingIds).not.toContain(createdIds[4]);
+  });
 });

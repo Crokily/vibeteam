@@ -42,6 +42,9 @@ declare global {
         getTopWorkflows: (limit: number) => Promise<WorkflowUsageEntry[]>;
         getTopAgents: (limit: number) => Promise<AgentUsageEntry[]>;
       };
+      dialog: {
+        openDirectory: () => Promise<string | null>;
+      };
       config: {
         get: <K extends keyof AppConfig>(key: K) => Promise<AppConfig[K]>;
         set: <K extends keyof AppConfig>(key: K, value: AppConfig[K]) => Promise<void>;

@@ -1,4 +1,13 @@
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs';
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+} from 'fs';
 import * as path from 'path';
 
 import { WorkflowDefinition } from '../types';
@@ -7,6 +16,8 @@ import { TaskStatus, WorkflowSession } from './WorkflowSession';
 export type SessionManagerOptions = {
   baseDir?: string;
 };
+
+const MAX_SESSIONS = 50;
 
 const normalizeLines = (chunk: string): string[] =>
   chunk
@@ -25,6 +36,7 @@ export class SessionManager {
   }
 
   static create(goal: string, options: SessionManagerOptions = {}): SessionManager {
+    SessionManager.pruneSessions(options.baseDir);
     return new SessionManager(new WorkflowSession(goal), options.baseDir);
   }
 
@@ -36,6 +48,37 @@ export class SessionManager {
     const session = WorkflowSession.fromSnapshot(parsed, sessionId);
 
     return new SessionManager(session, baseDir);
+  }
+
+  private static pruneSessions(baseDir: string = process.cwd()): void {
+    const sessionDir = SessionManager.getSessionDir(baseDir);
+    if (!existsSync(sessionDir)) {
+      return;
+    }
+
+    try {
+      const files = readdirSync(sessionDir)
+        .filter((file) => file.endsWith('.json'))
+        .map((file) => {
+          const filePath = path.join(sessionDir, file);
+          return {
+            path: filePath,
+            mtime: statSync(filePath).mtime.getTime(),
+          };
+        })
+        .sort((a, b) => a.mtime - b.mtime);
+
+      if (files.length >= MAX_SESSIONS) {
+        // Remove enough files so that adding one more keeps us at MAX_SESSIONS
+        const deleteCount = files.length - MAX_SESSIONS + 1;
+        for (let i = 0; i < deleteCount; i++) {
+          unlinkSync(files[i].path);
+        }
+      }
+    } catch (error) {
+      // Fail silently on cleanup errors to avoid blocking the main flow
+      console.error('Failed to prune sessions:', error);
+    }
   }
 
   getSession(): WorkflowSession {

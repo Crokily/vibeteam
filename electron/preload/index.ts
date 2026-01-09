@@ -54,6 +54,9 @@ const electronAPI = {
     getTopAgents: (limit: number) =>
       ipcRenderer.invoke('stats:get-top-agents', limit) as Promise<AgentUsageEntry[]>,
   },
+  dialog: {
+    openDirectory: () => ipcRenderer.invoke('dialog:open-directory') as Promise<string | null>,
+  },
   config: {
     get: <K extends keyof AppConfig>(key: K) =>
       ipcRenderer.invoke('config:get', key) as Promise<AppConfig[K]>,

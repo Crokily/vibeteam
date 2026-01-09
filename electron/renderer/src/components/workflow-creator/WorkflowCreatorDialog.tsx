@@ -663,6 +663,20 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
     setCanvasError(null);
   };
 
+  const handleBrowseBaseDir = async () => {
+    const path = await ipcClient.dialog.openDirectory();
+    if (path) {
+      setBaseDir(path);
+    }
+  };
+
+  const handleBrowseCwd = async () => {
+    const path = await ipcClient.dialog.openDirectory();
+    if (path) {
+      setCwd(path);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 px-4 py-6 backdrop-blur">
       <div className="relative flex h-[92vh] w-full max-w-7xl flex-col overflow-hidden rounded-3xl border border-border/70 bg-slate/90 shadow-[0_40px_120px_rgba(0,0,0,0.5)]">
@@ -707,8 +721,9 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
             <input
               value={baseDir}
               onChange={(event) => setBaseDir(event.target.value)}
-              placeholder="Auto"
-              className="rounded-2xl border border-border/60 bg-ink/70 px-4 py-2 text-xs text-iron outline-none transition focus:border-amber-300/70"
+              onClick={handleBrowseBaseDir}
+              placeholder="Auto (Click to browse)"
+              className="cursor-pointer rounded-2xl border border-border/60 bg-ink/70 px-4 py-2 text-xs text-iron outline-none transition focus:border-amber-300/70"
             />
           </div>
           <div className="flex items-end justify-end">
@@ -858,8 +873,9 @@ export const WorkflowCreatorDialog = ({ isOpen, onClose }: WorkflowCreatorDialog
                       <input
                         value={cwd}
                         onChange={(event) => setCwd(event.target.value)}
-                        placeholder={baseDir || 'Auto'}
-                        className="rounded-xl border border-border/60 bg-ink/70 px-3 py-2 text-xs text-iron outline-none transition focus:border-amber-300/70"
+                        onClick={handleBrowseCwd}
+                        placeholder={baseDir || 'Auto (Click to browse)'}
+                        className="cursor-pointer rounded-xl border border-border/60 bg-ink/70 px-3 py-2 text-xs text-iron outline-none transition focus:border-amber-300/70"
                       />
                     </div>
                     <div className="flex flex-col gap-2">

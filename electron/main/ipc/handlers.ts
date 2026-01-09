@@ -1,4 +1,4 @@
-import { app } from 'electron';
+import { app, dialog } from 'electron';
 import { existsSync, readdirSync, statSync, unlinkSync } from 'fs';
 import * as path from 'path';
 import {
@@ -163,6 +163,12 @@ export const commandHandlers = {
   },
   'stats:get-top-agents': async (limit: number): Promise<AgentUsageEntry[]> => {
     return getUsageStatsService().getTopAgents(limit);
+  },
+  'dialog:open-directory': async (): Promise<string | null> => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      properties: ['openDirectory', 'createDirectory'],
+    });
+    return canceled ? null : filePaths[0];
   },
   'config:get': async <K extends keyof AppConfig>(
     key: K
