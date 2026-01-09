@@ -155,3 +155,53 @@ The `AdapterRegistry` SHALL provide methods to enumerate registered adapter type
 #### Scenario: Unknown Type Metadata
 - **WHEN** `registry.getMetadata(type)` is called with an unregistered type
 - **THEN** it returns `undefined`
+
+### Requirement: Claude Code Launch Config
+The Claude Adapter SHALL provide launch configurations for both interactive and headless modes via the unified interface.
+
+#### Scenario: Interactive Mode for Claude Code
+- **WHEN** `getLaunchConfig('interactive', prompt)` is called
+- **THEN** the arguments pass the prompt as a positional argument
+- **AND** no headless flags are included
+
+#### Scenario: Headless Mode for Claude Code
+- **WHEN** `getLaunchConfig('headless', prompt)` is called
+- **THEN** the arguments include `-p` and `--dangerously-skip-permissions`
+- **AND** the prompt is passed as a positional argument
+
+### Requirement: Claude Code Interaction Patterns
+The Claude Adapter SHALL detect idle and confirmation prompts emitted by the Claude Code CLI.
+
+#### Scenario: Idle Prompt Detected
+- **WHEN** the CLI outputs the idle prompt `>`
+- **THEN** the adapter detects the `interaction_idle` state
+
+#### Scenario: Confirmation Prompt Detected
+- **WHEN** the CLI outputs a confirmation menu (for example, "Do you want to create ...?")
+- **THEN** the adapter detects the `interaction_handler` state
+
+### Requirement: OpenCode Launch Config
+The OpenCode Adapter SHALL provide launch configurations for both interactive and headless modes via the unified interface.
+
+#### Scenario: Interactive Mode for OpenCode
+- **WHEN** `getLaunchConfig('interactive', prompt)` is called
+- **THEN** the arguments include `--prompt` followed by the prompt
+- **AND** no `run` subcommand is included
+
+#### Scenario: Headless Mode for OpenCode
+- **WHEN** `getLaunchConfig('headless', prompt)` is called
+- **THEN** the arguments include `run`
+- **AND** the prompt is passed as a positional argument
+- **AND** no `--prompt` flag is used
+
+### Requirement: OpenCode Interaction Patterns
+The OpenCode Adapter SHALL detect running status and tool permission prompts emitted by the OpenCode CLI.
+
+#### Scenario: Running Indicator Detected
+- **WHEN** the CLI outputs the run indicator text `esc interrupt`
+- **THEN** the adapter detects the `execution_running` state
+
+#### Scenario: Tool Permission Prompt Detected
+- **WHEN** the CLI outputs `Permission required to run this tool:`
+- **THEN** the adapter detects the `interaction_handler` state
+
