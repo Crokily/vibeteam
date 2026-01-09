@@ -16,3 +16,4 @@ test/*.txt
 out/
 .claude/
 .codex/
+release/

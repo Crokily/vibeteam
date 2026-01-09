@@ -14,6 +14,7 @@ const createWindow = (): BrowserWindow => {
     minWidth: 960,
     minHeight: 640,
     show: false,
+    icon: join(__dirname, '../../assets/icons/app.png'),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,

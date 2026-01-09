@@ -1,0 +1,12 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景：深色底 -->
+  <rect width="1024" height="1024" rx="220" fill="#0B0E14"/>
+  
+  <!-- 延伸线 (青色)：从 V 的底部顶点(512, 700) 向右无限延伸 -->
+  <!-- 稍微超出 1024 以确保填满边缘 -->
+  <path d="M512 700H1050" stroke="#2DD4BF" stroke-width="110" stroke-linecap="round"/>
+  
+  <!-- V 字 (白色)：绝对居中 -->
+  <!-- 顶点位于 (512, 700) -->
+  <path d="M272 300L512 700L752 300" stroke="white" stroke-width="110" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

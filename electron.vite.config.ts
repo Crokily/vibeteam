@@ -27,6 +27,7 @@ export default defineConfig({
   },
   renderer: {
     root: resolve(__dirname, 'electron/renderer'),
+    publicDir: resolve(__dirname, 'assets'),
     plugins: [react()],
     build: {
       rollupOptions: {

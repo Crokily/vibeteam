@@ -1,4 +1,28 @@
 {
+  "appId": "com.vibeteam.app",
+  "productName": "Vibeteam",
+  "directories": {
+    "output": "release/${version}"
+  },
+  "files": [
+    "out/**/*",
+    "package.json",
+    "electron/main/ipc/**/*"
+  ],
+  "mac": {
+    "target": ["dmg", "zip"],
+    "icon": "assets/icons/app.icns",
+    "hardenedRuntime": true,
+    "gatekeeperAssess": false
+  },
+  "win": {
+    "target": "nsis",
+    "icon": "assets/icons/app.ico"
+  },
+  "linux": {
+    "target": "AppImage",
+    "icon": "assets/icons/app.png"
+  },
   "npmRebuild": true,
   "nodeGypRebuild": false,
   "buildDependenciesFromSource": false,
